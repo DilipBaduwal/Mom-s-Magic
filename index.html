@@ -59,10 +59,12 @@
   .overlay-sub { font-size:14px; color:rgba(255,255,255,0.85); text-align:center; padding:0 20px; }
   .overlay-score { font-family:'Baloo 2',cursive; font-size:44px; font-weight:800; color:#fff; }
   .overlay-btn { background:var(--yellow); color:var(--brown); border:none; border-radius:50px; padding:12px 36px; font-family:'Baloo 2',cursive; font-weight:800; font-size:18px; cursor:pointer; margin-top:4px; }
+  .overlay-btn:disabled { opacity:0.6; cursor:not-allowed; }
 
   .name-form { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; padding:0 24px; }
   .name-input { width:100%; padding:10px 16px; border:2px solid var(--yellow); border-radius:12px; font-family:'Nunito',sans-serif; font-size:15px; background:rgba(255,255,255,0.95); color:var(--text-dark); text-align:center; }
   .name-input::placeholder { color:#aaa; }
+  .save-status { font-size:12px; color:rgba(255,255,255,0.8); text-align:center; min-height:18px; }
 
   #page-leaderboard { padding:20px 16px; max-width:500px; margin:0 auto; }
   .page-title { font-family:'Baloo 2',cursive; font-weight:800; font-size:26px; color:var(--orange); margin-bottom:4px; }
@@ -160,7 +162,8 @@
           <option>Bhagalpur</option><option>Patna</option><option>Muzaffarpur</option>
           <option>Gaya</option><option>Darbhanga</option><option>Purnia</option>
         </select>
-        <button class="overlay-btn" onclick="saveScore()" style="width:100%;">💾 Save & Play Again</button>
+        <div class="save-status" id="saveStatus"></div>
+        <button class="overlay-btn" id="saveBtn" onclick="saveScore()" style="width:100%;">💾 Save & Play Again</button>
       </div>
     </div>
   </div>
@@ -211,13 +214,8 @@
   <footer>Made with ❤️ by <strong>Moms Magic Biscuits</strong> · Bihar, India</footer>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-  SINGLE type="module" script — Firebase + all game logic
-  Everything lives here so there's zero timing race.
-════════════════════════════════════════════════════ -->
 <script type="module">
 
-// ── Firebase ──────────────────────────────────────────
 import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAnalytics }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 import { getDatabase, ref, push, query, orderByChild, limitToLast, get }
@@ -235,18 +233,23 @@ const app = initializeApp({
 });
 getAnalytics(app);
 const db = getDatabase(app);
-console.log('✅ Firebase initialised');
 
-async function addScore(name, district, score) {
+// ── FIX 1: Save score to a local variable before any reset ──
+let savedScore = 0;
+
+async function addScore(name, district, scoreVal) {
   try {
     await push(ref(db, 'scores'), {
-      name, district, score,
+      name,
+      district,
+      score: scoreVal,   // use passed value, not global
       date: new Date().toLocaleDateString('en-IN')
     });
-    console.log('✅ Score saved:', name, score);
+    console.log('✅ Score saved:', name, scoreVal);
+    return true;
   } catch(e) {
     console.error('❌ Save failed:', e.message);
-    alert('Could not save score: ' + e.message);
+    return false;
   }
 }
 
@@ -254,16 +257,20 @@ async function renderLeaderboard() {
   const lbList = document.getElementById('lbList');
   lbList.innerHTML = '<div class="lb-empty">Loading…</div>';
   try {
-    const snap = await get(query(ref(db,'scores'), orderByChild('score'), limitToLast(10)));
+    // FIX 2: Use get() without orderByChild to avoid index error,
+    // then sort in JS — works even without Firebase index rule
+    const snap = await get(ref(db, 'scores'));
     if (!snap.exists()) {
       lbList.innerHTML = '<div class="lb-empty">No scores yet!<br>Be the first to play 🎮</div>';
       return;
     }
     const scores = [];
     snap.forEach(c => scores.push(c.val()));
-    scores.sort((a,b) => b.score - a.score);
+    // Sort by score descending in JavaScript (no index needed)
+    scores.sort((a, b) => b.score - a.score);
+    const top10 = scores.slice(0, 10);
     const medals = ['🥇','🥈','🥉'];
-    lbList.innerHTML = scores.map((s,i) => `
+    lbList.innerHTML = top10.map((s, i) => `
       <div class="lb-row ${i===0?'top1':i===1?'top2':i===2?'top3':''}">
         <div class="lb-medal">${medals[i]||''}</div>
         <div class="lb-rank" style="color:${i<3?'var(--orange)':'var(--text-mid)'}">${i+1}</div>
@@ -273,10 +280,9 @@ async function renderLeaderboard() {
         </div>
         <div class="lb-score">${s.score}</div>
       </div>`).join('');
-    console.log('✅ Leaderboard loaded:', scores.length, 'scores');
   } catch(e) {
     console.error('❌ Load failed:', e.message);
-    lbList.innerHTML = '<div class="lb-empty">Could not load scores.<br>' + e.message + '</div>';
+    lbList.innerHTML = `<div class="lb-empty">Could not load scores.<br>${e.message}</div>`;
   }
 }
 
@@ -452,15 +458,36 @@ function loop() {
 
 function endGame(){
   state='over';
-  document.getElementById('finalScore').textContent=score;
+  // FIX 3: Save score to local variable BEFORE showing game over screen
+  savedScore = score;
+  document.getElementById('finalScore').textContent = savedScore;
+  document.getElementById('saveStatus').textContent = '';
+  document.getElementById('saveBtn').disabled = false;
+  document.getElementById('saveBtn').textContent = '💾 Save & Play Again';
   document.getElementById('gameOverOverlay').classList.add('show');
 }
 
+// FIX 4: saveScore now uses savedScore (captured at game over time)
 window.saveScore = async function(){
-  const name     = document.getElementById('playerName').value.trim()||'Anonymous';
-  const district = document.getElementById('playerDistrict').value||'Bihar';
-  await addScore(name, district, score);
-  startGame();
+  const name     = document.getElementById('playerName').value.trim() || 'Anonymous';
+  const district = document.getElementById('playerDistrict').value || 'Bihar';
+  const btn      = document.getElementById('saveBtn');
+  const status   = document.getElementById('saveStatus');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving…';
+  status.textContent = '';
+
+  const ok = await addScore(name, district, savedScore);
+
+  if(ok) {
+    status.textContent = '✅ Score saved!';
+    setTimeout(() => startGame(), 800);
+  } else {
+    status.textContent = '❌ Could not save. Check connection.';
+    btn.disabled = false;
+    btn.textContent = '💾 Try Again';
+  }
 };
 
 // ── Controls ──────────────────────────────────────────
