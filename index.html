@@ -217,29 +217,47 @@
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+// ── FIREBASE IMPORTS (v10 modular) ──────────────────────────────────────────
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, get }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+// ── FIREBASE INIT ───────────────────────────────────────────────────────────
 const app = initializeApp({
-  apiKey: "AIzaSyDRCkGvqPsYbQBickP8nD5RpYy3UNTT9mk",
-  authDomain: "moms-magic-fa570.firebaseapp.com",
-  databaseURL: "https://moms-magic-fa570-default-rtdb.firebaseio.com",
-  projectId: "moms-magic-fa570",
-  storageBucket: "moms-magic-fa570.firebasestorage.app",
+  apiKey:            "AIzaSyDRCkGvqPsYbQBickP8nD5RpYy3UNTT9mk",
+  authDomain:        "moms-magic-fa570.firebaseapp.com",
+  databaseURL:       "https://moms-magic-fa570-default-rtdb.firebaseio.com",
+  projectId:         "moms-magic-fa570",
+  storageBucket:     "moms-magic-fa570.firebasestorage.app",
   messagingSenderId: "249637399473",
-  appId: "1:249637399473:web:2686ae053b5bec75cf2b90"
+  appId:             "1:249637399473:web:2686ae053b5bec75cf2b90"
 });
-const db = getDatabase(app);
 
-// Score captured at game-over, safe from reset
-let savedScore = 0;
+const db   = getDatabase(app);
+const auth = getAuth(app);
+
+// ── ANONYMOUS AUTH on startup ───────────────────────────────────────────────
+// Firebase default rules require auth != null to write.
+// signInAnonymously gives every visitor a valid uid automatically.
+signInAnonymously(auth).catch(e => console.warn('Anon auth failed:', e.message));
+
+// ── FIREBASE HELPERS ────────────────────────────────────────────────────────
+async function ensureAuth() {
+  if (auth.currentUser) return;           // already signed in
+  await signInAnonymously(auth);          // sign in now if not yet ready
+}
 
 async function addScore(name, district, scoreVal) {
   try {
+    await ensureAuth();                   // ← guarantees auth before write
     await push(ref(db, 'scores'), {
-      name, district,
+      name,
+      district,
       score: Number(scoreVal),
-      date: new Date().toLocaleDateString('en-IN')
+      date:  new Date().toLocaleDateString('en-IN')
     });
     return true;
   } catch(e) {
@@ -261,7 +279,7 @@ async function renderLeaderboard() {
     const all = [];
     snap.forEach(child => all.push(child.val()));
     all.sort((a, b) => Number(b.score) - Number(a.score));
-    const top = all.slice(0, 10);
+    const top    = all.slice(0, 10);
     const medals = ['🥇','🥈','🥉'];
     lbList.innerHTML = top.map((s, i) => `
       <div class="lb-row ${['top1','top2','top3'][i]||''}">
@@ -277,6 +295,9 @@ async function renderLeaderboard() {
     lbList.innerHTML = `<div class="lb-empty">Could not load scores.<br>${e.message}</div>`;
   }
 }
+
+// Score captured at game-over, safe from reset
+let savedScore = 0;
 
 window.showPage = function(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -456,10 +477,10 @@ function endGame(){
 }
 
 window.saveScore = async function(){
-  const name     = document.getElementById('playerName').value.trim()||'Anonymous';
-  const district = document.getElementById('playerDistrict').value||'Bihar';
-  const btn      = document.getElementById('saveBtn');
-  const status   = document.getElementById('saveStatus');
+  const name      = document.getElementById('playerName').value.trim()||'Anonymous';
+  const district  = document.getElementById('playerDistrict').value||'Bihar';
+  const btn       = document.getElementById('saveBtn');
+  const status    = document.getElementById('saveStatus');
   const scoreToSave = savedScore;
 
   btn.disabled=true;
