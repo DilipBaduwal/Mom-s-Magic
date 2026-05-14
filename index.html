@@ -28,6 +28,7 @@
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { width:100%; min-height:100vh; background:#FFF8ED; font-family:'Nunito',sans-serif; color:var(--text-dark); overflow-x:hidden; }
 
+  /* NAV */
   nav { background:var(--orange); padding:0 16px; display:flex; align-items:center; justify-content:space-between; height:56px; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
   .nav-logo { font-family:'Baloo 2',cursive; font-weight:800; font-size:20px; color:#fff; letter-spacing:0.5px; }
   .nav-logo span { color:var(--yellow); }
@@ -35,9 +36,11 @@
   .nav-tab { background:none; border:none; color:rgba(255,255,255,0.8); font-family:'Nunito',sans-serif; font-size:12px; font-weight:600; padding:6px 10px; border-radius:20px; cursor:pointer; transition:all 0.2s; }
   .nav-tab.active, .nav-tab:hover { background:rgba(255,255,255,0.2); color:#fff; }
 
+  /* PAGES */
   .page { display:none; min-height:calc(100vh - 56px); }
   .page.active { display:block; }
 
+  /* GAME PAGE */
   #page-game { background:linear-gradient(180deg,#FFF3D6 0%,#FFF8ED 60%); }
   .hero { text-align:center; padding:24px 16px 12px; }
   .hero-title { font-family:'Baloo 2',cursive; font-weight:800; font-size:28px; color:var(--orange); line-height:1.1; }
@@ -52,10 +55,12 @@
   .hud-val { font-family:'Baloo 2',cursive; font-weight:700; font-size:20px; color:var(--brown); }
   .lives-row { display:flex; gap:4px; justify-content:center; font-size:18px; margin-top:2px; }
 
+  /* DPAD */
   .dpad { display:flex; gap:0; justify-content:center; padding:8px 16px 16px; max-width:400px; margin:0 auto; }
   .dpad-btn { background:var(--orange); color:#fff; border:none; border-radius:12px; width:80px; height:56px; font-size:26px; cursor:pointer; margin:0 8px; box-shadow:0 4px 0 var(--orange-dark); transition:all 0.1s; user-select:none; display:flex; align-items:center; justify-content:center; }
   .dpad-btn:active { transform:translateY(2px); box-shadow:0 2px 0 var(--orange-dark); }
 
+  /* OVERLAY */
   .overlay { display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(43,20,8,0.82); border-radius:13px; z-index:10; align-items:center; justify-content:center; flex-direction:column; gap:12px; overflow-y:auto; }
   .overlay.show { display:flex; }
   .overlay-title { font-family:'Baloo 2',cursive; font-size:30px; font-weight:800; color:var(--yellow); text-align:center; }
@@ -64,11 +69,13 @@
   .overlay-btn { background:var(--yellow); color:var(--brown); border:none; border-radius:50px; padding:12px 36px; font-family:'Baloo 2',cursive; font-weight:800; font-size:18px; cursor:pointer; margin-top:4px; }
   .overlay-btn:disabled { opacity:0.6; cursor:not-allowed; }
 
+  /* NAME FORM */
   .name-form { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; padding:0 24px; }
   .name-input { width:100%; padding:10px 16px; border:2px solid var(--yellow); border-radius:12px; font-family:'Nunito',sans-serif; font-size:15px; background:rgba(255,255,255,0.95); color:var(--text-dark); text-align:center; }
   .name-input::placeholder { color:#aaa; }
   .save-status { font-size:13px; color:#fff; text-align:center; min-height:20px; font-weight:700; }
 
+  /* LEADERBOARD */
   #page-leaderboard { padding:20px 16px; max-width:500px; margin:0 auto; }
   .page-title { font-family:'Baloo 2',cursive; font-weight:800; font-size:26px; color:var(--orange); margin-bottom:4px; }
   .page-sub { font-size:13px; color:var(--text-mid); margin-bottom:20px; }
@@ -87,7 +94,11 @@
   .lb-score { font-family:'Baloo 2',cursive; font-weight:800; font-size:20px; color:var(--orange); }
   .lb-empty { text-align:center; padding:40px 16px; color:var(--text-mid); font-size:14px; }
   .refresh-btn { display:flex; align-items:center; gap:6px; background:#fff; border:2px solid var(--orange); color:var(--orange); border-radius:50px; padding:8px 18px; font-family:'Nunito',sans-serif; font-weight:700; font-size:13px; cursor:pointer; margin-bottom:16px; }
+  .live-badge { display:inline-flex; align-items:center; gap:5px; background:#E8F5E9; color:#2E7D32; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; margin-bottom:12px; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:#4CAF50; animation:pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
+  /* PRODUCT */
   #page-product { padding:20px 16px; max-width:500px; margin:0 auto; }
   .product-hero { background:var(--orange); border-radius:20px; padding:24px 20px; text-align:center; margin-bottom:20px; }
   .product-hero-title { font-family:'Baloo 2',cursive; font-weight:800; font-size:26px; color:#fff; }
@@ -105,6 +116,7 @@
   .why-text-title { font-weight:700; font-size:14px; color:var(--text-dark); }
   .why-text-sub { font-size:13px; color:var(--text-mid); margin-top:2px; }
 
+  /* FAQ */
   #page-faq { padding:20px 16px; max-width:500px; margin:0 auto; }
   .faq-item { background:#fff; border-radius:14px; border:1.5px solid #FFD59E; margin-bottom:10px; overflow:hidden; }
   .faq-q { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; cursor:pointer; gap:10px; }
@@ -125,13 +137,14 @@
 <nav>
   <div class="nav-logo">Moms <span>Magic</span></div>
   <div class="nav-tabs">
-    <button class="nav-tab active" data-page="game">🎮 Play</button>
-    <button class="nav-tab" data-page="leaderboard">🏆 Top 10</button>
-    <button class="nav-tab" data-page="product">🍪 Products</button>
-    <button class="nav-tab" data-page="faq">❓ FAQ</button>
+    <button class="nav-tab active" onclick="showPage('game')">🎮 Play</button>
+    <button class="nav-tab" onclick="showPage('leaderboard')">🏆 Top 10</button>
+    <button class="nav-tab" onclick="showPage('product')">🍪 Products</button>
+    <button class="nav-tab" onclick="showPage('faq')">❓ FAQ</button>
   </div>
 </nav>
 
+<!-- GAME PAGE -->
 <div id="page-game" class="page active">
   <div class="hero">
     <div class="hero-title">Catch the <span>Biscuits!</span></div>
@@ -144,12 +157,16 @@
   </div>
   <div class="game-wrap">
     <canvas id="gameCanvas" width="380" height="480"></canvas>
+
+    <!-- START OVERLAY -->
     <div class="overlay show" id="startOverlay">
       <div style="font-size:64px;">🍪</div>
       <div class="overlay-title">Biscuit Catcher</div>
       <div class="overlay-sub">Catch falling Moms Magic biscuits in your basket. Miss 3 and it's game over!</div>
-      <button class="overlay-btn" id="startBtn">▶ Start Playing</button>
+      <button class="overlay-btn" onclick="startGame()">▶ Start Playing</button>
     </div>
+
+    <!-- GAME OVER OVERLAY -->
     <div class="overlay" id="gameOverOverlay">
       <div style="font-size:48px;">😢</div>
       <div class="overlay-title">Game Over!</div>
@@ -164,10 +181,11 @@
           <option>Gaya</option><option>Darbhanga</option><option>Purnia</option>
         </select>
         <div class="save-status" id="saveStatus"></div>
-        <button class="overlay-btn" id="saveBtn" style="width:100%;">💾 Save &amp; Play Again</button>
+        <button class="overlay-btn" id="saveBtn" onclick="saveScore()" style="width:100%;">💾 Save & Play Again</button>
       </div>
     </div>
   </div>
+
   <div class="dpad">
     <button class="dpad-btn" id="leftBtn" aria-label="Move left">◀</button>
     <button class="dpad-btn" id="rightBtn" aria-label="Move right">▶</button>
@@ -175,155 +193,224 @@
   <div style="text-align:center; font-size:12px; color:var(--text-mid); padding-bottom:20px;">Or use keyboard ← → arrow keys</div>
 </div>
 
+<!-- LEADERBOARD PAGE -->
 <div id="page-leaderboard" class="page">
-  <div class="page-title">🏆 Top 10 Players</div>
-  <div class="page-sub">Best Biscuit Catchers across Bihar</div>
-  <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
-  <div class="lb-card">
-    <div class="lb-header"><div style="font-size:20px;">🏅</div><div class="lb-header-text">Moms Magic Hall of Fame</div></div>
-    <div id="lbList"><div class="lb-empty">Loading…</div></div>
+  <div style="padding:20px 16px; max-width:500px; margin:0 auto;">
+    <div class="page-title">🏆 Top 10 Players</div>
+    <div class="page-sub">Best Biscuit Catchers across Bihar</div>
+    <div class="live-badge"><div class="live-dot"></div> Live — updates automatically</div>
+    <button class="refresh-btn" onclick="renderLeaderboard()">↻ Refresh</button>
+    <div class="lb-card">
+      <div class="lb-header">
+        <div style="font-size:20px;">🏅</div>
+        <div class="lb-header-text">Moms Magic Hall of Fame</div>
+      </div>
+      <div id="lbList"><div class="lb-empty">Connecting…</div></div>
+    </div>
   </div>
 </div>
 
+<!-- PRODUCT PAGE -->
 <div id="page-product" class="page">
-  <div class="product-hero">
-    <div style="font-size:48px; margin-bottom:8px;">🍪</div>
-    <div class="product-hero-title">Moms Magic Biscuits</div>
-    <div class="product-hero-sub">Taste the magic in every bite — loved across Bihar</div>
+  <div style="padding:20px 16px; max-width:500px; margin:0 auto;">
+    <div class="product-hero">
+      <div style="font-size:48px; margin-bottom:8px;">🍪</div>
+      <div class="product-hero-title">Moms Magic Biscuits</div>
+      <div class="product-hero-sub">Taste the magic in every bite — loved across Bihar</div>
+    </div>
+    <div class="product-grid">
+      <div class="product-card"><div class="product-icon" style="background:#FFF9C4;">🌾</div><div><div class="product-name">Glucose Biscuit</div><div class="product-desc">Energy-packed glucose biscuits made with real wheat. Perfect for kids going to school and adults on the go. Gives instant energy.</div><span class="product-tag">Energy Boost</span><span class="product-tag">For Kids</span></div></div>
+      <div class="product-card"><div class="product-icon" style="background:#FCE4EC;">🍓</div><div><div class="product-name">Cream Biscuit</div><div class="product-desc">Crispy biscuits sandwiched with delicious cream filling. Available in strawberry, vanilla, and chocolate flavours. A family favourite!</div><span class="product-tag">3 Flavours</span><span class="product-tag">Family Pack</span></div></div>
+      <div class="product-card"><div class="product-icon" style="background:#E8F5E9;">🌿</div><div><div class="product-name">Marie Lite</div><div class="product-desc">Light, thin, and mildly sweet. Great with chai. A healthier choice for those who want taste without too many calories.</div><span class="product-tag">With Chai</span><span class="product-tag">Light Snack</span></div></div>
+      <div class="product-card"><div class="product-icon" style="background:#FFF3E0;">🥛</div><div><div class="product-name">Milk Biscuit</div><div class="product-desc">Rich in milk goodness. Made with real dairy for strong bones. Nutritious biscuit specially designed for growing children.</div><span class="product-tag">Calcium Rich</span><span class="product-tag">For Children</span></div></div>
+      <div class="product-card"><div class="product-icon" style="background:#F3E5F5;">🍫</div><div><div class="product-name">Choco Delight</div><div class="product-desc">Chocolate-flavoured biscuits that kids absolutely love. A sweet treat for special moments and celebrations.</div><span class="product-tag">Kids Favourite</span><span class="product-tag">Chocolatey</span></div></div>
+    </div>
+    <div class="why-section">
+      <div class="why-title">Why Moms Magic?</div>
+      <div class="why-item"><div class="why-icon">🏭</div><div><div class="why-text-title">Made in Bihar, for Bihar</div><div class="why-text-sub">Local production means fresher biscuits at better prices for your family.</div></div></div>
+      <div class="why-item"><div class="why-icon">✅</div><div><div class="why-text-title">FSSAI Certified</div><div class="why-text-sub">Every batch tested for quality. Safe for your children and your family.</div></div></div>
+      <div class="why-item"><div class="why-icon">💰</div><div><div class="why-text-title">Affordable Pricing</div><div class="why-text-sub">Premium taste without the premium price. Value for every rupee.</div></div></div>
+      <div class="why-item"><div class="why-icon">🛒</div><div><div class="why-text-title">Available Everywhere</div><div class="why-text-sub">Find us at your local kirana store across 6 districts of Bihar.</div></div></div>
+    </div>
+    <footer>Made with ❤️ by <strong>Moms Magic Biscuits</strong> · Bihar, India</footer>
   </div>
-  <div class="product-grid">
-    <div class="product-card"><div class="product-icon" style="background:#FFF9C4;">🌾</div><div><div class="product-name">Glucose Biscuit</div><div class="product-desc">Energy-packed glucose biscuits made with real wheat. Perfect for kids going to school and adults on the go. Gives instant energy.</div><span class="product-tag">Energy Boost</span><span class="product-tag">For Kids</span></div></div>
-    <div class="product-card"><div class="product-icon" style="background:#FCE4EC;">🍓</div><div><div class="product-name">Cream Biscuit</div><div class="product-desc">Crispy biscuits sandwiched with delicious cream filling. Available in strawberry, vanilla, and chocolate flavours. A family favourite!</div><span class="product-tag">3 Flavours</span><span class="product-tag">Family Pack</span></div></div>
-    <div class="product-card"><div class="product-icon" style="background:#E8F5E9;">🌿</div><div><div class="product-name">Marie Lite</div><div class="product-desc">Light, thin, and mildly sweet. Great with chai. A healthier choice for those who want taste without too many calories.</div><span class="product-tag">With Chai</span><span class="product-tag">Light Snack</span></div></div>
-    <div class="product-card"><div class="product-icon" style="background:#FFF3E0;">🥛</div><div><div class="product-name">Milk Biscuit</div><div class="product-desc">Rich in milk goodness. Made with real dairy for strong bones. Nutritious biscuit specially designed for growing children.</div><span class="product-tag">Calcium Rich</span><span class="product-tag">For Children</span></div></div>
-    <div class="product-card"><div class="product-icon" style="background:#F3E5F5;">🍫</div><div><div class="product-name">Choco Delight</div><div class="product-desc">Chocolate-flavoured biscuits that kids absolutely love. A sweet treat for special moments and celebrations.</div><span class="product-tag">Kids Favourite</span><span class="product-tag">Chocolatey</span></div></div>
-  </div>
-  <div class="why-section">
-    <div class="why-title">Why Moms Magic?</div>
-    <div class="why-item"><div class="why-icon">🏭</div><div><div class="why-text-title">Made in Bihar, for Bihar</div><div class="why-text-sub">Local production means fresher biscuits at better prices for your family.</div></div></div>
-    <div class="why-item"><div class="why-icon">✅</div><div><div class="why-text-title">FSSAI Certified</div><div class="why-text-sub">Every batch tested for quality. Safe for your children and your family.</div></div></div>
-    <div class="why-item"><div class="why-icon">💰</div><div><div class="why-text-title">Affordable Pricing</div><div class="why-text-sub">Premium taste without the premium price. Value for every rupee.</div></div></div>
-    <div class="why-item"><div class="why-icon">🛒</div><div><div class="why-text-title">Available Everywhere</div><div class="why-text-sub">Find us at your local kirana store across 6 districts of Bihar.</div></div></div>
-  </div>
-  <footer>Made with ❤️ by <strong>Moms Magic Biscuits</strong> · Bihar, India</footer>
 </div>
 
+<!-- FAQ PAGE -->
 <div id="page-faq" class="page">
-  <div class="page-title">❓ Frequently Asked Questions</div>
-  <div class="page-sub" style="margin-bottom:20px;">Everything you want to know about Moms Magic</div>
-  <div id="faqList"></div>
-  <footer>Made with ❤️ by <strong>Moms Magic Biscuits</strong> · Bihar, India</footer>
+  <div style="padding:20px 16px; max-width:500px; margin:0 auto;">
+    <div class="page-title">❓ Frequently Asked Questions</div>
+    <div class="page-sub" style="margin-bottom:20px;">Everything you want to know about Moms Magic</div>
+    <div id="faqList"></div>
+    <footer>Made with ❤️ by <strong>Moms Magic Biscuits</strong> · Bihar, India</footer>
+  </div>
 </div>
 
-<!-- Firebase SDK (non-module, compat) -->
+<!-- ══════════════════════════════════════════════════════════
+  Firebase COMPAT SDK (v10 compat) — works with plain <script>
+  Leaderboard logic taken from Doc3 (real-time .on listener)
+  Gameplay taken from Doc4 (beautiful canvas engine)
+════════════════════════════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
 <script>
-// ── FIREBASE INIT (compat SDK — all globals, no modules) ──────────────────
-const firebaseConfig = {
+// ── FIREBASE INIT ─────────────────────────────────────────────────────────────
+firebase.initializeApp({
   apiKey:            "AIzaSyDRCkGvqPsYbQBickP8nD5RpYy3UNTT9mk",
   authDomain:        "moms-magic-fa570.firebaseapp.com",
   databaseURL:       "https://moms-magic-fa570-default-rtdb.firebaseio.com",
   projectId:         "moms-magic-fa570",
   storageBucket:     "moms-magic-fa570.firebasestorage.app",
   messagingSenderId: "249637399473",
-  appId:             "1:249637399473:web:2686ae053b5bec75cf2b90"
-};
-firebase.initializeApp(firebaseConfig);
+  appId:             "1:249637399473:web:2686ae053b5bec75cf2b90",
+  measurementId:     "G-884C7EPG4M"
+});
+
 const db   = firebase.database();
 const auth = firebase.auth();
 
-// Sign in anonymously immediately
-auth.signInAnonymously().catch(e => console.warn('Anon auth failed:', e.message));
+// Anonymous auth — required by default Firebase rules (auth != null)
+auth.signInAnonymously()
+  .then(() => console.log('✅ Signed in anonymously'))
+  .catch(e  => console.warn('⚠️ Anon auth failed:', e.message));
 
-// ── FIREBASE HELPERS ────────────────────────────────────────────────────────
-async function ensureAuth() {
-  if (auth.currentUser) return;
-  await auth.signInAnonymously();
-}
+// ── LEADERBOARD — real-time .on() listener (from Doc3) ───────────────────────
+const medals = ['🥇','🥈','🥉'];
+let lbListenerAttached = false;
 
-async function addScore(name, district, scoreVal) {
-  try {
-    await ensureAuth();
-    await db.ref('scores').push({
-      name,
-      district,
-      score: Number(scoreVal),
-      date: new Date().toLocaleDateString('en-IN')
-    });
-    return true;
-  } catch(e) {
-    console.error('Save error:', e.message);
-    return false;
-  }
-}
-
-async function renderLeaderboard() {
+function initLeaderboard() {
   const lbList = document.getElementById('lbList');
-  lbList.innerHTML = '<div class="lb-empty">Loading…</div>';
-  try {
-    const snap = await db.ref('scores').once('value');
+  if (lbListenerAttached) return;   // don't double-attach
+  lbListenerAttached = true;
+
+  // .on('value') fires immediately AND every time data changes in Firebase
+  db.ref('scores').on('value', (snap) => {
     if (!snap.exists()) {
       lbList.innerHTML = '<div class="lb-empty">No scores yet!<br>Be the first to play 🎮</div>';
       return;
     }
     const all = [];
-    snap.forEach(child => all.push(child.val()));
+    snap.forEach(child => {
+      const v = child.val();
+      if (v && v.score !== undefined) all.push(v);
+    });
     all.sort((a, b) => Number(b.score) - Number(a.score));
-    const top    = all.slice(0, 10);
-    const medals = ['🥇','🥈','🥉'];
+    const top = all.slice(0, 10);
     lbList.innerHTML = top.map((s, i) => `
-      <div class="lb-row ${['top1','top2','top3'][i]||''}">
-        <div class="lb-medal">${medals[i]||''}</div>
+      <div class="lb-row ${i===0?'top1':i===1?'top2':i===2?'top3':''}">
+        <div class="lb-medal">${medals[i] || ''}</div>
         <div class="lb-rank" style="color:${i<3?'var(--orange)':'var(--text-mid)'}">${i+1}</div>
         <div style="flex:1">
-          <div class="lb-name">${s.name||'Anonymous'}</div>
-          <div class="lb-district">${s.district||'Bihar'} · ${s.date||''}</div>
+          <div class="lb-name">${s.name || 'Anonymous'}</div>
+          <div class="lb-district">${s.district || 'Bihar'} · ${s.date || ''}</div>
         </div>
         <div class="lb-score">${Number(s.score)}</div>
       </div>`).join('');
-  } catch(e) {
-    lbList.innerHTML = `<div class="lb-empty">Could not load scores.<br>${e.message}</div>`;
+  }, (err) => {
+    lbList.innerHTML = `<div class="lb-empty">❌ ${err.message}</div>`;
+  });
+}
+
+// renderLeaderboard called by refresh button / nav — just re-triggers display
+// since .on() already keeps it live, we just re-attach if needed
+function renderLeaderboard() {
+  if (!lbListenerAttached) {
+    initLeaderboard();
+  } else {
+    // force a one-time re-read to refresh display immediately
+    const lbList = document.getElementById('lbList');
+    lbList.innerHTML = '<div class="lb-empty">Refreshing…</div>';
+    db.ref('scores').once('value').then((snap) => {
+      if (!snap.exists()) { lbList.innerHTML='<div class="lb-empty">No scores yet! 🎮</div>'; return; }
+      const all = [];
+      snap.forEach(child => { const v=child.val(); if(v&&v.score!==undefined) all.push(v); });
+      all.sort((a,b)=>Number(b.score)-Number(a.score));
+      const top=all.slice(0,10);
+      lbList.innerHTML=top.map((s,i)=>`
+        <div class="lb-row ${i===0?'top1':i===1?'top2':i===2?'top3':''}">
+          <div class="lb-medal">${medals[i]||''}</div>
+          <div class="lb-rank" style="color:${i<3?'var(--orange)':'var(--text-mid)'}">${i+1}</div>
+          <div style="flex:1">
+            <div class="lb-name">${s.name||'Anonymous'}</div>
+            <div class="lb-district">${s.district||'Bihar'} · ${s.date||''}</div>
+          </div>
+          <div class="lb-score">${Number(s.score)}</div>
+        </div>`).join('');
+    }).catch(e=>{ lbList.innerHTML=`<div class="lb-empty">❌ ${e.message}</div>`; });
   }
 }
 
-// ── NAV ─────────────────────────────────────────────────────────────────────
+// ── SAVE SCORE ────────────────────────────────────────────────────────────────
+let savedScore = 0;   // captured at game-over, safe from reset
+
+async function saveScore() {
+  const name     = document.getElementById('playerName').value.trim() || 'Anonymous';
+  const district = document.getElementById('playerDistrict').value    || 'Bihar';
+  const btn      = document.getElementById('saveBtn');
+  const status   = document.getElementById('saveStatus');
+
+  btn.disabled    = true;
+  btn.textContent = '⏳ Saving…';
+  status.textContent = '';
+
+  try {
+    // Wait for auth if it hasn't completed yet
+    if (!auth.currentUser) await auth.signInAnonymously();
+
+    await db.ref('scores').push({
+      name,
+      district,
+      score:     Number(savedScore),
+      date:      new Date().toLocaleDateString('en-IN'),
+      timestamp: Date.now()
+    });
+
+    status.textContent = '✅ Saved! Score: ' + savedScore;
+    console.log('✅ Score saved to Firebase:', name, savedScore);
+    setTimeout(() => startGame(), 900);
+
+  } catch (e) {
+    console.error('❌ Save error:', e.message);
+    status.textContent   = '❌ Error: ' + e.message;
+    btn.disabled         = false;
+    btn.textContent      = '💾 Try Again';
+  }
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t => {
-    if (t.dataset.page === name) t.classList.add('active');
-  });
-  if (name === 'leaderboard') renderLeaderboard();
+  document.getElementById('page-'+name).classList.add('active');
+  const order = ['game','leaderboard','product','faq'];
+  document.querySelectorAll('.nav-tab')[order.indexOf(name)].classList.add('active');
+  if (name === 'leaderboard') { initLeaderboard(); renderLeaderboard(); }
 }
-document.querySelectorAll('.nav-tab').forEach(btn => {
-  btn.addEventListener('click', () => showPage(btn.dataset.page));
-});
-document.getElementById('refreshBtn').addEventListener('click', renderLeaderboard);
 
-// ── FAQs ─────────────────────────────────────────────────────────────────────
+// ── FAQ ───────────────────────────────────────────────────────────────────────
 const faqs = [
   { q:'Where can I buy Moms Magic biscuits?', a:'Moms Magic biscuits are available at kirana stores, grocery shops, and supermarkets across Bhagalpur, Patna, Muzaffarpur, Gaya, Darbhanga, and Purnia districts of Bihar.' },
   { q:'Are Moms Magic biscuits safe for children?', a:'Yes! All Moms Magic biscuits are FSSAI certified and manufactured under strict hygiene conditions. Our Milk Biscuits are specially formulated with nutrition for growing children.' },
   { q:'What flavours are available?', a:'We offer Glucose, Cream (Strawberry, Vanilla, Chocolate), Marie Lite, Milk Biscuit, and Choco Delight. New flavours are added regularly!' },
   { q:'How long is the shelf life?', a:'Our biscuits have a shelf life of 6 months from the date of manufacturing. Always check the date printed on the back of the pack.' },
-  { q:'Are there artificial colours or preservatives?', a:'Moms Magic biscuits use only approved food-grade ingredients. We minimize artificial additives and are committed to clean labelling.' },
-  { q:'How do I contact Moms Magic?', a:'Ask your local kirana shop owner for our distributor contact, or look for the number printed on the biscuit pack.' },
+  { q:'Are there any artificial colours or preservatives?', a:'Moms Magic biscuits use only approved food-grade ingredients. We minimize artificial additives and are committed to clean labelling.' },
+  { q:'How do I contact Moms Magic?', a:'You can reach us at your nearest district distributor. Ask your local kirana shop owner for our distributor contact, or look for the number printed on the biscuit pack.' },
   { q:'How does the leaderboard game work?', a:'Catch the falling Moms Magic biscuits using the left/right buttons. Each biscuit you catch adds points. Miss 3 biscuits and the game ends. Enter your name and district to appear on the Top 10 leaderboard!' },
   { q:'Is this website only for Bihar?', a:'Currently Moms Magic is available across 6 districts of Bihar. We plan to expand to more districts soon. Stay tuned!' },
 ];
-document.getElementById('faqList').innerHTML = faqs.map((f, i) => `
+document.getElementById('faqList').innerHTML = faqs.map((f,i) => `
   <div class="faq-item" id="faq${i}">
-    <div class="faq-q" onclick="document.getElementById('faq${i}').classList.toggle('open')">
+    <div class="faq-q" onclick="toggleFaq(${i})">
       <div class="faq-q-text">${f.q}</div><div class="faq-arrow">▼</div>
     </div>
     <div class="faq-a">${f.a}</div>
   </div>`).join('');
+function toggleFaq(i) { document.getElementById('faq'+i).classList.toggle('open'); }
 
-// ── GAME ─────────────────────────────────────────────────────────────────────
+// ── GAME ENGINE (from Doc4 — full beautiful version) ─────────────────────────
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
@@ -338,11 +425,17 @@ const BISCUITS = [
 ];
 
 let state='idle', score=0, lives=3, level=1;
-let basket = { x:W/2, w:80, h:22, speed:8 };
+let basket={ x:W/2, w:80, h:22, speed:8 };
 let items=[], particles=[], keys={}, frameCount=0;
 let spawnInterval=90, fallSpeed=2.8;
 let leftHeld=false, rightHeld=false;
-let savedScore=0;
+
+function updateHUD() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('levelDisplay').textContent = level;
+  document.getElementById('livesDisplay').innerHTML =
+    Array.from({length:3},(_,i)=>i<lives?'❤️':'🖤').join('');
+}
 
 function startGame() {
   document.getElementById('startOverlay').classList.remove('show');
@@ -355,80 +448,69 @@ function startGame() {
   requestAnimationFrame(loop);
 }
 
-document.getElementById('startBtn').addEventListener('click', startGame);
-
-function updateHUD() {
-  document.getElementById('scoreDisplay').textContent = score;
-  document.getElementById('levelDisplay').textContent = level;
-  document.getElementById('livesDisplay').innerHTML =
-    Array.from({length:3}, (_, i) => i < lives ? '❤️' : '🖤').join('');
-}
-
 function spawnItem() {
-  const pool = level > 3 ? BISCUITS : BISCUITS.slice(0, -1);
-  const type = pool[Math.floor(Math.random() * pool.length)];
-  items.push({ x:30+Math.random()*(W-60), y:-30, type, size:30, speed:fallSpeed+Math.random()*1.2 });
+  const pool = level>3 ? BISCUITS : BISCUITS.slice(0,-1);
+  const type = pool[Math.floor(Math.random()*pool.length)];
+  items.push({ x:30+Math.random()*(W-60), y:-30, type, size:30,
+               speed:fallSpeed+Math.random()*1.2 });
 }
 
-function spawnParticles(x, y, color, caught) {
-  for (let i=0; i<8; i++) particles.push({
-    x, y,
-    vx:(Math.random()-.5)*6,
-    vy:(Math.random()-.5)*6-2,
-    alpha:1,
-    color: caught ? color : '#888',
-    size: caught ? 6 : 4
+function spawnParticles(x,y,color,caught) {
+  for(let i=0;i<8;i++) particles.push({
+    x,y, vx:(Math.random()-.5)*6, vy:(Math.random()-.5)*6-2,
+    alpha:1, color:caught?color:'#888', size:caught?6:4
   });
 }
 
 function drawBackground() {
-  const sky = ctx.createLinearGradient(0,0,0,H*.6);
+  const sky=ctx.createLinearGradient(0,0,0,H*.6);
   sky.addColorStop(0,'#87CEEB'); sky.addColorStop(1,'#C8E6C9');
   ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
   ctx.fillStyle='#A5D6A7'; ctx.fillRect(0,H*.75,W,H*.25);
   ctx.beginPath();
-  for (let i=0; i<W; i+=4) {
-    ctx.moveTo(i, H*.75);
-    ctx.lineTo(i, H*.75-(Math.sin(i*.08+frameCount*.02)*4+4));
+  for(let i=0;i<W;i+=4){
+    ctx.moveTo(i,H*.75);
+    ctx.lineTo(i,H*.75-(Math.sin(i*.08+frameCount*.02)*4+4));
   }
   ctx.strokeStyle='#81C784'; ctx.lineWidth=3; ctx.stroke();
   ctx.fillStyle='rgba(255,255,255,0.7)';
-  [[60,50,70,25],[180,70,55,20],[300,45,65,22]].forEach(([x,y,w,h]) => {
-    ctx.beginPath(); ctx.ellipse(x,y,w,h,0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(x-20,y+5,40,16,0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(x+25,y+5,45,18,0,0,Math.PI*2); ctx.fill();
+  [[60,50,70,25],[180,70,55,20],[300,45,65,22]].forEach(([x,y,w,h])=>{
+    ctx.beginPath();ctx.ellipse(x,y,w,h,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x-20,y+5,40,16,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+25,y+5,45,18,0,0,Math.PI*2);ctx.fill();
   });
 }
 
 function drawBasket() {
-  const bx = basket.x - basket.w/2, by = H-60;
+  const bx=basket.x-basket.w/2, by=H-60;
   ctx.fillStyle='#E8620A';
   ctx.beginPath();
   ctx.moveTo(bx,by); ctx.lineTo(bx+basket.w,by);
   ctx.lineTo(bx+basket.w-8,by+basket.h); ctx.lineTo(bx+8,by+basket.h);
   ctx.closePath(); ctx.fill();
   ctx.fillStyle='#B84D00';
-  for (let i=1; i<4; i++) ctx.fillRect(bx+(basket.w/4)*i-1, by, 2, basket.h);
-  ctx.fillStyle='#FFC843'; ctx.fillRect(bx, by-6, basket.w, 8);
+  for(let i=1;i<4;i++) ctx.fillRect(bx+(basket.w/4)*i-1,by,2,basket.h);
+  ctx.fillStyle='#FFC843'; ctx.fillRect(bx,by-6,basket.w,8);
   ctx.beginPath();
-  ctx.arc(bx, by-3, 5, 0, Math.PI*2);
-  ctx.arc(bx+basket.w, by-3, 5, 0, Math.PI*2);
+  ctx.arc(bx,by-3,5,0,Math.PI*2);
+  ctx.arc(bx+basket.w,by-3,5,0,Math.PI*2);
   ctx.fill();
   ctx.font='13px Nunito'; ctx.fillStyle='#fff'; ctx.textAlign='center';
-  ctx.fillText('🧺', basket.x, by+basket.h-3);
+  ctx.fillText('🧺',basket.x,by+basket.h-3);
 }
 
 function drawItems() {
-  items.forEach(it => {
-    ctx.font=`${it.size}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(it.type.emoji, it.x, it.y);
+  items.forEach(it=>{
+    ctx.font=`${it.size}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(it.type.emoji,it.x,it.y);
     ctx.font='10px Nunito'; ctx.fillStyle='rgba(0,0,0,0.5)';
-    ctx.fillText(it.type.bad ? '☠' : '+'+it.type.pts, it.x, it.y+22);
+    ctx.fillText(it.type.bad?'☠':'+'+it.type.pts, it.x, it.y+22);
   });
 }
 
 function drawParticles() {
-  particles.forEach(p => {
+  particles.forEach(p=>{
     ctx.globalAlpha=p.alpha; ctx.fillStyle=p.color;
     ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
   });
@@ -436,129 +518,110 @@ function drawParticles() {
 }
 
 function loop() {
-  if (state !== 'playing') return;
+  if(state!=='playing') return;
   frameCount++;
   ctx.clearRect(0,0,W,H);
   drawBackground();
 
-  if (leftHeld  || keys['ArrowLeft'])  basket.x = Math.max(basket.w/2, basket.x - basket.speed);
-  if (rightHeld || keys['ArrowRight']) basket.x = Math.min(W - basket.w/2, basket.x + basket.speed);
+  if(leftHeld||keys['ArrowLeft'])  basket.x=Math.max(basket.w/2,basket.x-basket.speed);
+  if(rightHeld||keys['ArrowRight'])basket.x=Math.min(W-basket.w/2,basket.x+basket.speed);
+  if(frameCount%spawnInterval===0) spawnItem();
 
-  if (frameCount % spawnInterval === 0) spawnItem();
-
-  const by = H-60;
-  for (let i = items.length-1; i >= 0; i--) {
-    const it = items[i];
-    it.y += it.speed;
-    const hit = it.y+15 >= by && it.y-15 <= by+basket.h &&
-                it.x >= basket.x-basket.w/2 && it.x <= basket.x+basket.w/2;
-    if (hit) {
-      if (it.type.bad) {
+  const by=H-60;
+  for(let i=items.length-1;i>=0;i--){
+    const it=items[i]; it.y+=it.speed;
+    const hit = it.y+15>=by && it.y-15<=by+basket.h &&
+                it.x>=basket.x-basket.w/2 && it.x<=basket.x+basket.w/2;
+    if(hit){
+      if(it.type.bad){
         lives--;
-        spawnParticles(it.x, it.y, '#E53935', false);
+        spawnParticles(it.x,it.y,'#E53935',false);
         canvas.style.animation='shake 0.3s';
-        setTimeout(() => canvas.style.animation='', 300);
+        setTimeout(()=>canvas.style.animation='',300);
         updateHUD();
-        if (lives <= 0) { items.splice(i,1); endGame(); return; }
+        if(lives<=0){ items.splice(i,1); endGame(); return; }
       } else {
-        score += it.type.pts;
-        spawnParticles(it.x, it.y, it.type.color, true);
-        level = Math.floor(score/100)+1;
-        spawnInterval = Math.max(30, 90-(level-1)*8);
-        fallSpeed = 2.8+(level-1)*.3;
+        score+=it.type.pts;
+        spawnParticles(it.x,it.y,it.type.color,true);
+        level=Math.floor(score/100)+1;
+        spawnInterval=Math.max(30,90-(level-1)*8);
+        fallSpeed=2.8+(level-1)*.3;
         updateHUD();
       }
       items.splice(i,1);
-    } else if (it.y > H+30) {
-      if (!it.type.bad) {
+    } else if(it.y>H+30){
+      if(!it.type.bad){
         lives--;
-        spawnParticles(it.x, H-20, '#888', false);
+        spawnParticles(it.x,H-20,'#888',false);
         updateHUD();
-        if (lives <= 0) { items.splice(i,1); endGame(); return; }
+        if(lives<=0){ items.splice(i,1); endGame(); return; }
       }
       items.splice(i,1);
     }
   }
 
-  for (let i = particles.length-1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += .2; p.alpha -= .04;
-    if (p.alpha <= 0) particles.splice(i,1);
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.2; p.alpha-=.04;
+    if(p.alpha<=0) particles.splice(i,1);
   }
 
-  drawParticles(); drawItems(); drawBasket();
-  ctx.font='bold 14px Nunito'; ctx.fillStyle='rgba(0,0,0,0.25)';
-  ctx.textAlign='left'; ctx.fillText('Lv.'+level, 10, 22);
+  drawParticles();
+  drawItems();
+  drawBasket();
+
+  ctx.font='bold 14px Nunito';
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.textAlign='left';
+  ctx.fillText('Lv.'+level,10,22);
+
   requestAnimationFrame(loop);
 }
 
 function endGame() {
-  state = 'over';
-  savedScore = score;
-  document.getElementById('finalScore').textContent = savedScore;
-  document.getElementById('saveStatus').textContent = '';
-  document.getElementById('saveBtn').disabled = false;
-  document.getElementById('saveBtn').textContent = '💾 Save & Play Again';
+  state   = 'over';
+  savedScore = score;  // capture before any reset
+  document.getElementById('finalScore').textContent  = savedScore;
+  document.getElementById('saveStatus').textContent  = '';
+  document.getElementById('saveBtn').disabled        = false;
+  document.getElementById('saveBtn').textContent     = '💾 Save & Play Again';
   document.getElementById('gameOverOverlay').classList.add('show');
 }
 
-document.getElementById('saveBtn').addEventListener('click', async function() {
-  const name      = document.getElementById('playerName').value.trim() || 'Anonymous';
-  const district  = document.getElementById('playerDistrict').value || 'Bihar';
-  const btn       = document.getElementById('saveBtn');
-  const status    = document.getElementById('saveStatus');
-  const scoreToSave = savedScore;
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Saving…';
-  status.textContent = '';
-
-  const ok = await addScore(name, district, scoreToSave);
-  if (ok) {
-    status.textContent = '✅ Saved! Score: ' + scoreToSave;
-    setTimeout(() => startGame(), 900);
-  } else {
-    status.textContent = '❌ Could not save. Try again.';
-    btn.disabled = false;
-    btn.textContent = '💾 Try Again';
-  }
-});
-
-// Keyboard
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  keys[e.key] = true;
-  if (['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+  keys[e.key]=true;
+  if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
 });
-document.addEventListener('keyup', e => { keys[e.key] = false; });
+document.addEventListener('keyup', e => { keys[e.key]=false; });
 
-// D-pad buttons
 const leftBtn  = document.getElementById('leftBtn');
 const rightBtn = document.getElementById('rightBtn');
-leftBtn.addEventListener('touchstart',  e => { leftHeld=true;  e.preventDefault(); }, {passive:false});
-leftBtn.addEventListener('touchend',    ()  => { leftHeld=false; });
-leftBtn.addEventListener('mousedown',   ()  => { leftHeld=true;  });
-leftBtn.addEventListener('mouseup',     ()  => { leftHeld=false; });
-rightBtn.addEventListener('touchstart', e => { rightHeld=true; e.preventDefault(); }, {passive:false});
-rightBtn.addEventListener('touchend',   ()  => { rightHeld=false; });
-rightBtn.addEventListener('mousedown',  ()  => { rightHeld=true;  });
-rightBtn.addEventListener('mouseup',    ()  => { rightHeld=false; });
+leftBtn.addEventListener('touchstart',  e=>{ leftHeld=true;  e.preventDefault(); },{passive:false});
+leftBtn.addEventListener('touchend',    ()=> leftHeld=false);
+leftBtn.addEventListener('mousedown',   ()=> leftHeld=true);
+leftBtn.addEventListener('mouseup',     ()=> leftHeld=false);
+rightBtn.addEventListener('touchstart', e=>{ rightHeld=true; e.preventDefault(); },{passive:false});
+rightBtn.addEventListener('touchend',   ()=> rightHeld=false);
+rightBtn.addEventListener('mousedown',  ()=> rightHeld=true);
+rightBtn.addEventListener('mouseup',    ()=> rightHeld=false);
 
-// Canvas touch drag
-let touchStartX = null;
-canvas.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
-canvas.addEventListener('touchmove', e => {
-  if (touchStartX === null) return;
-  const dx = e.touches[0].clientX - touchStartX;
-  basket.x = Math.max(basket.w/2, Math.min(W - basket.w/2, basket.x + dx*.8));
-  touchStartX = e.touches[0].clientX;
+let touchStartX=null;
+canvas.addEventListener('touchstart', e=>{ touchStartX=e.touches[0].clientX; e.preventDefault(); },{passive:false});
+canvas.addEventListener('touchmove',  e=>{
+  if(touchStartX===null) return;
+  const dx=e.touches[0].clientX-touchStartX;
+  basket.x=Math.max(basket.w/2,Math.min(W-basket.w/2,basket.x+dx*.8));
+  touchStartX=e.touches[0].clientX;
   e.preventDefault();
-}, {passive:false});
-canvas.addEventListener('touchend', () => { touchStartX = null; });
+},{passive:false});
+canvas.addEventListener('touchend', ()=> touchStartX=null);
 
-// Initial draw
+// ── INIT ──────────────────────────────────────────────────────────────────────
 drawBackground();
 drawBasket();
-renderLeaderboard();
+initLeaderboard();   // attach real-time listener on page load
+
 </script>
 </body>
 </html>
