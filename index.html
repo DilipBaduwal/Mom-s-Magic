@@ -216,37 +216,48 @@
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+// ── FIREBASE IMPORTS (v10 modular) ──────────────────────────────────────────
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, get }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ── FIREBASE INIT ───────────────────────────────────────────────────────────
 const app = initializeApp({
-  apiKey: "AIzaSyDRCkGvqPsYbQBickP8nD5RpYy3UNTT9mk",
-  authDomain: "moms-magic-fa570.firebaseapp.com",
-  databaseURL: "https://moms-magic-fa570-default-rtdb.firebaseio.com",
-  projectId: "moms-magic-fa570",
-  storageBucket: "moms-magic-fa570.firebasestorage.app",
+  apiKey:            "AIzaSyDRCkGvqPsYbQBickP8nD5RpYy3UNTT9mk",
+  authDomain:        "moms-magic-fa570.firebaseapp.com",
+  databaseURL:       "https://moms-magic-fa570-default-rtdb.firebaseio.com",
+  projectId:         "moms-magic-fa570",
+  storageBucket:     "moms-magic-fa570.firebasestorage.app",
   messagingSenderId: "249637399473",
-  appId: "1:249637399473:web:2686ae053b5bec75cf2b90"
+  appId:             "1:249637399473:web:2686ae053b5bec75cf2b90"
 });
 
-const db = getDatabase(app);
+const db   = getDatabase(app);
 const auth = getAuth(app);
 
+// ── ANONYMOUS AUTH on startup ───────────────────────────────────────────────
+// Firebase default rules require auth != null to write.
+// signInAnonymously gives every visitor a valid uid automatically.
 signInAnonymously(auth).catch(e => console.warn('Anon auth failed:', e.message));
 
+// ── FIREBASE HELPERS ────────────────────────────────────────────────────────
 async function ensureAuth() {
-  if (auth.currentUser) return;           
-  await signInAnonymously(auth);          
+  if (auth.currentUser) return;           // already signed in
+  await signInAnonymously(auth);          // sign in now if not yet ready
 }
 
 async function addScore(name, district, scoreVal) {
   try {
-    await ensureAuth();                   
+    await ensureAuth();                   // ← guarantees auth before write
     await push(ref(db, 'scores'), {
-      name, district,
+      name,
+      district,
       score: Number(scoreVal),
-      date: new Date().toLocaleDateString('en-IN')
+      date:  new Date().toLocaleDateString('en-IN')
     });
     return true;
   } catch(e) {
@@ -255,11 +266,11 @@ async function addScore(name, district, scoreVal) {
   }
 }
 
+// No orderByChild — sorts in JS, no Firebase index needed
 async function renderLeaderboard() {
   const lbList = document.getElementById('lbList');
   lbList.innerHTML = '<div class="lb-empty">Loading…</div>';
   try {
-    await ensureAuth();
     const snap = await get(ref(db, 'scores'));
     if (!snap.exists()) {
       lbList.innerHTML = '<div class="lb-empty">No scores yet!<br>Be the first to play 🎮</div>';
@@ -268,7 +279,7 @@ async function renderLeaderboard() {
     const all = [];
     snap.forEach(child => all.push(child.val()));
     all.sort((a, b) => Number(b.score) - Number(a.score));
-    const top = all.slice(0, 10);
+    const top    = all.slice(0, 10);
     const medals = ['🥇','🥈','🥉'];
     lbList.innerHTML = top.map((s, i) => `
       <div class="lb-row ${['top1','top2','top3'][i]||''}">
@@ -281,31 +292,33 @@ async function renderLeaderboard() {
         <div class="lb-score">${Number(s.score)}</div>
       </div>`).join('');
   } catch(e) {
-    lbList.innerHTML = `<div class="lb-empty">Could not load scores.</div>`;
+    lbList.innerHTML = `<div class="lb-empty">Could not load scores.<br>${e.message}</div>`;
   }
 }
 
+// Score captured at game-over, safe from reset
 let savedScore = 0;
+
 window.showPage = function(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  const tabs = document.querySelectorAll('.nav-tab');
-  if(name==='game') tabs[0].classList.add('active');
-  if(name==='leaderboard') { tabs[1].classList.add('active'); renderLeaderboard(); }
-  if(name==='product') tabs[2].classList.add('active');
-  if(name==='faq') tabs[3].classList.add('active');
+  ['game','leaderboard','product','faq'].forEach((n,i) => {
+    if(n===name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
+  });
+  if(name==='leaderboard') renderLeaderboard();
 };
+window.renderLeaderboard = renderLeaderboard;
 
 const faqs = [
-  { q:'Where can I buy Moms Magic biscuits?', a:'Available at kirana stores across Bihar districts.' },
-  { q:'Are Moms Magic biscuits safe for children?', a:'Yes, all are FSSAI certified.' },
-  { q:'What flavours are available?', a:'Glucose, Cream, Marie Lite, Milk, and Choco Delight.' },
-  { q:'How long is the shelf life?', a:'6 months from manufacturing.' },
-  { q:'Are there artificial colours?', a:'Only approved food-grade ingredients.' },
-  { q:'How do I contact Moms Magic?', a:'Check the number on the biscuit pack.' },
-  { q:'How does the game work?', a:'Catch biscuits with the basket. Miss 3 and it\'s over.' },
-  { q:'Is this website only for Bihar?', a:'Currently focused on 6 districts of Bihar.' }
+  { q:'Where can I buy Moms Magic biscuits?', a:'Moms Magic biscuits are available at kirana stores, grocery shops, and supermarkets across Bhagalpur, Patna, Muzaffarpur, Gaya, Darbhanga, and Purnia districts of Bihar.' },
+  { q:'Are Moms Magic biscuits safe for children?', a:'Yes! All Moms Magic biscuits are FSSAI certified and manufactured under strict hygiene conditions. Our Milk Biscuits are specially formulated with nutrition for growing children.' },
+  { q:'What flavours are available?', a:'We offer Glucose, Cream (Strawberry, Vanilla, Chocolate), Marie Lite, Milk Biscuit, and Choco Delight. New flavours are added regularly!' },
+  { q:'How long is the shelf life?', a:'Our biscuits have a shelf life of 6 months from the date of manufacturing. Always check the date printed on the back of the pack.' },
+  { q:'Are there artificial colours or preservatives?', a:'Moms Magic biscuits use only approved food-grade ingredients. We minimize artificial additives and are committed to clean labelling.' },
+  { q:'How do I contact Moms Magic?', a:'Ask your local kirana shop owner for our distributor contact, or look for the number printed on the biscuit pack.' },
+  { q:'How does the leaderboard game work?', a:'Catch the falling Moms Magic biscuits using the left/right buttons. Each biscuit you catch adds points. Miss 3 biscuits and the game ends. Enter your name and district to appear on the Top 10 leaderboard!' },
+  { q:'Is this website only for Bihar?', a:'Currently Moms Magic is available across 6 districts of Bihar. We plan to expand to more districts soon. Stay tuned!' },
 ];
 document.getElementById('faqList').innerHTML = faqs.map((f,i) => `
   <div class="faq-item" id="faq${i}">
@@ -316,40 +329,42 @@ document.getElementById('faqList').innerHTML = faqs.map((f,i) => `
   </div>`).join('');
 window.toggleFaq = i => document.getElementById('faq'+i).classList.toggle('open');
 
+// Game
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx    = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
 const BISCUITS = [
   { emoji:'🍪', label:'Glucose', pts:10, color:'#F5A623' },
-  { emoji:'🥐', label:'Cream', pts:15, color:'#FF6B9D' },
-  { emoji:'🌾', label:'Marie', pts:10, color:'#7CBF5B' },
-  { emoji:'🥛', label:'Milk', pts:20, color:'#5BB8F5' },
-  { emoji:'🍫', label:'Choco', pts:25, color:'#9B6B3A' },
-  { emoji:'💀', label:'Bad', pts:0, color:'#888', bad:true },
+  { emoji:'🥐', label:'Cream',   pts:15, color:'#FF6B9D' },
+  { emoji:'🌾', label:'Marie',   pts:10, color:'#7CBF5B' },
+  { emoji:'🥛', label:'Milk',    pts:20, color:'#5BB8F5' },
+  { emoji:'🍫', label:'Choco',   pts:25, color:'#9B6B3A' },
+  { emoji:'💀', label:'Bad',     pts:0,  color:'#888', bad:true },
 ];
 
 let state='idle', score=0, lives=3, level=1;
-let basket={ x:W/2, w:80, h:22, speed:10 };
+let basket={ x:W/2, w:80, h:22, speed:8 };
 let items=[], particles=[], keys={}, frameCount=0;
 let spawnInterval=90, fallSpeed=2.8;
 let leftHeld=false, rightHeld=false;
-
-const clouds = [ {x:50, y:60, w:40, h:20}, {x:250, y:100, w:50, h:25}, {x:150, y:40, w:35, h:18} ];
 
 window.startGame = function() {
   document.getElementById('startOverlay').classList.remove('show');
   document.getElementById('gameOverOverlay').classList.remove('show');
   score=0; lives=3; level=1; items=[]; particles=[];
   spawnInterval=90; fallSpeed=2.8; frameCount=0;
-  basket.x=W/2; updateHUD(); state='playing';
+  basket.x=W/2;
+  updateHUD();
+  state='playing';
   requestAnimationFrame(loop);
 };
 
 function updateHUD() {
   document.getElementById('scoreDisplay').textContent = score;
   document.getElementById('levelDisplay').textContent = level;
-  document.getElementById('livesDisplay').innerHTML = Array.from({length:3},(_,i)=>i<lives?'❤️':'🖤').join('');
+  document.getElementById('livesDisplay').innerHTML =
+    Array.from({length:3},(_,i)=>i<lives?'❤️':'🖤').join('');
 }
 
 function spawnItem() {
@@ -370,11 +385,14 @@ function drawBackground() {
   sky.addColorStop(0,'#87CEEB'); sky.addColorStop(1,'#C8E6C9');
   ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
   ctx.fillStyle='#A5D6A7'; ctx.fillRect(0,H*.75,W,H*.25);
-  
-  ctx.fillStyle="rgba(255,255,255,0.7)";
-  clouds.forEach(c => {
-    ctx.beginPath(); ctx.ellipse(c.x, c.y, c.w, c.h, 0, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(c.x-20, c.y+5, c.w*.8, c.h*.8, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  for(let i=0;i<W;i+=4){ctx.moveTo(i,H*.75);ctx.lineTo(i,H*.75-(Math.sin(i*.08+frameCount*.02)*4+4));}
+  ctx.strokeStyle='#81C784'; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.7)';
+  [[60,50,70,25],[180,70,55,20],[300,45,65,22]].forEach(([x,y,w,h])=>{
+    ctx.beginPath();ctx.ellipse(x,y,w,h,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x-20,y+5,40,16,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+25,y+5,45,18,0,0,Math.PI*2);ctx.fill();
   });
 }
 
@@ -387,6 +405,7 @@ function drawBasket() {
   ctx.fillStyle='#B84D00';
   for(let i=1;i<4;i++)ctx.fillRect(bx+(basket.w/4)*i-1,by,2,basket.h);
   ctx.fillStyle='#FFC843';ctx.fillRect(bx,by-6,basket.w,8);
+  ctx.beginPath();ctx.arc(bx,by-3,5,0,Math.PI*2);ctx.arc(bx+basket.w,by-3,5,0,Math.PI*2);ctx.fill();
   ctx.font='13px Nunito';ctx.fillStyle='#fff';ctx.textAlign='center';
   ctx.fillText('🧺',basket.x,by+basket.h-3);
 }
@@ -395,6 +414,8 @@ function drawItems() {
   items.forEach(it=>{
     ctx.font=`${it.size}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(it.type.emoji,it.x,it.y);
+    ctx.font='10px Nunito';ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillText(it.type.bad?'☠':'+'+it.type.pts,it.x,it.y+22);
   });
 }
 
@@ -409,76 +430,103 @@ function loop() {
   frameCount++;
   ctx.clearRect(0,0,W,H);
   drawBackground();
-  if(leftHeld||keys['ArrowLeft']) basket.x=Math.max(basket.w/2,basket.x-basket.speed);
-  if(rightHeld||keys['ArrowRight']) basket.x=Math.min(W-basket.w/2,basket.x+basket.speed);
+  if(leftHeld||keys['ArrowLeft'])  basket.x=Math.max(basket.w/2,basket.x-basket.speed);
+  if(rightHeld||keys['ArrowRight'])basket.x=Math.min(W-basket.w/2,basket.x+basket.speed);
   if(frameCount%spawnInterval===0)spawnItem();
   const by=H-60;
   for(let i=items.length-1;i>=0;i--){
     const it=items[i]; it.y+=it.speed;
-    const hit=it.y+15>=by && it.y-15<=by+basket.h && it.x>=basket.x-basket.w/2 && it.x<=basket.x+basket.w/2;
+    const hit=it.y+15>=by&&it.y-15<=by+basket.h&&
+              it.x>=basket.x-basket.w/2&&it.x<=basket.x+basket.w/2;
     if(hit){
       if(it.type.bad){
-        lives--; spawnParticles(it.x,it.y,'#E53935',false);
-        canvas.style.animation='shake 0.3s'; setTimeout(()=>canvas.style.animation='',300);
-        updateHUD(); if(lives<=0){ endGame(); return; }
+        lives--;spawnParticles(it.x,it.y,'#E53935',false);
+        canvas.style.animation='shake 0.3s';setTimeout(()=>canvas.style.animation='',300);
+        updateHUD();if(lives<=0){items.splice(i,1);endGame();return;}
       } else {
-        score+=it.type.pts; spawnParticles(it.x,it.y,it.type.color,true);
-        level=Math.floor(score/100)+1; spawnInterval=Math.max(30,90-(level-1)*8); fallSpeed=2.8+(level-1)*.3; updateHUD();
+        score+=it.type.pts;spawnParticles(it.x,it.y,it.type.color,true);
+        level=Math.floor(score/100)+1;
+        spawnInterval=Math.max(30,90-(level-1)*8);
+        fallSpeed=2.8+(level-1)*.3;updateHUD();
       }
       items.splice(i,1);
     } else if(it.y>H+30){
-      if(!it.type.bad){ lives--; updateHUD(); if(lives<=0){ endGame(); return; } }
+      if(!it.type.bad){lives--;spawnParticles(it.x,H-20,'#888',false);updateHUD();
+        if(lives<=0){items.splice(i,1);endGame();return;}}
       items.splice(i,1);
     }
   }
   for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=.2; p.alpha-=.04;
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.alpha-=.04;
     if(p.alpha<=0)particles.splice(i,1);
   }
-  drawParticles(); drawItems(); drawBasket();
+  drawParticles();drawItems();drawBasket();
+  ctx.font='bold 14px Nunito';ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.textAlign='left';ctx.fillText('Lv.'+level,10,22);
   requestAnimationFrame(loop);
 }
 
 function endGame(){
-  state='over'; savedScore = score;
-  document.getElementById('finalScore').textContent = score;
+  state='over';
+  savedScore = score;  // captured before reset
+  document.getElementById('finalScore').textContent = savedScore;
+  document.getElementById('saveStatus').textContent = '';
   document.getElementById('saveBtn').disabled = false;
   document.getElementById('saveBtn').textContent = '💾 Save & Play Again';
   document.getElementById('gameOverOverlay').classList.add('show');
 }
 
 window.saveScore = async function(){
-  const name = document.getElementById('playerName').value.trim()||'Anonymous';
-  const district = document.getElementById('playerDistrict').value||'Bihar';
-  const btn = document.getElementById('saveBtn');
-  btn.disabled=true; btn.textContent='⏳ Saving…';
-  const ok = await addScore(name, district, savedScore);
-  if(ok) setTimeout(()=>startGame(), 900);
-  else { btn.disabled=false; btn.textContent='💾 Try Again'; }
+  const name      = document.getElementById('playerName').value.trim()||'Anonymous';
+  const district  = document.getElementById('playerDistrict').value||'Bihar';
+  const btn       = document.getElementById('saveBtn');
+  const status    = document.getElementById('saveStatus');
+  const scoreToSave = savedScore;
+
+  btn.disabled=true;
+  btn.textContent='⏳ Saving…';
+  status.textContent='';
+
+  const ok = await addScore(name, district, scoreToSave);
+  if(ok){
+    status.textContent='✅ Saved! Score: '+scoreToSave;
+    setTimeout(()=>startGame(), 900);
+  } else {
+    status.textContent='❌ Could not save. Try again.';
+    btn.disabled=false;
+    btn.textContent='💾 Try Again';
+  }
 };
 
-document.addEventListener('keydown',e=>{keys[e.key]=true; if(['ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();});
+document.addEventListener('keydown',e=>{keys[e.key]=true;
+  if(['ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 
-const leftBtn=document.getElementById('leftBtn'), rightBtn=document.getElementById('rightBtn');
-const handleInput = (btn, val) => {
-  btn.addEventListener('pointerdown', e => { if(btn===leftBtn) leftHeld=true; else rightHeld=true; });
-  btn.addEventListener('pointerup', e => { if(btn===leftBtn) leftHeld=false; else rightHeld=false; });
-  btn.addEventListener('pointerleave', e => { if(btn===leftBtn) leftHeld=false; else rightHeld=false; });
-};
-handleInput(leftBtn); handleInput(rightBtn);
+const leftBtn=document.getElementById('leftBtn');
+const rightBtn=document.getElementById('rightBtn');
+leftBtn.addEventListener('touchstart',e=>{leftHeld=true;e.preventDefault();},{passive:false});
+leftBtn.addEventListener('touchend',()=>leftHeld=false);
+leftBtn.addEventListener('mousedown',()=>leftHeld=true);
+leftBtn.addEventListener('mouseup',()=>leftHeld=false);
+rightBtn.addEventListener('touchstart',e=>{rightHeld=true;e.preventDefault();},{passive:false});
+rightBtn.addEventListener('touchend',()=>rightHeld=false);
+rightBtn.addEventListener('mousedown',()=>rightHeld=true);
+rightBtn.addEventListener('mouseup',()=>rightHeld=false);
 
 let touchStartX=null;
-canvas.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX; e.preventDefault();},{passive:false});
+canvas.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;e.preventDefault();},{passive:false});
 canvas.addEventListener('touchmove',e=>{
   if(touchStartX===null)return;
   const dx=e.touches[0].clientX-touchStartX;
-  basket.x=Math.max(basket.w/2,Math.min(W-basket.w/2,basket.x+dx*1.2));
-  touchStartX=e.touches[0].clientX; e.preventDefault();
+  basket.x=Math.max(basket.w/2,Math.min(W-basket.w/2,basket.x+dx*.8));
+  touchStartX=e.touches[0].clientX;e.preventDefault();
 },{passive:false});
 canvas.addEventListener('touchend',()=>touchStartX=null);
 
-drawBackground(); drawBasket(); renderLeaderboard();
+drawBackground();
+drawBasket();
+renderLeaderboard();
+
 </script>
 </body>
 </html>
