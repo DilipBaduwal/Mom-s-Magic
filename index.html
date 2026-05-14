@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Moms Magic Biscuits</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -53,7 +56,7 @@
   .dpad-btn { background:var(--orange); color:#fff; border:none; border-radius:12px; width:80px; height:56px; font-size:26px; cursor:pointer; margin:0 8px; box-shadow:0 4px 0 var(--orange-dark); transition:all 0.1s; user-select:none; display:flex; align-items:center; justify-content:center; }
   .dpad-btn:active { transform:translateY(2px); box-shadow:0 2px 0 var(--orange-dark); }
 
-  .overlay { display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(43,20,8,0.82); border-radius:13px; z-index:10; align-items:center; justify-content:center; flex-direction:column; gap:12px; }
+  .overlay { display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(43,20,8,0.82); border-radius:13px; z-index:10; align-items:center; justify-content:center; flex-direction:column; gap:12px; overflow-y:auto; }
   .overlay.show { display:flex; }
   .overlay-title { font-family:'Baloo 2',cursive; font-size:30px; font-weight:800; color:var(--yellow); text-align:center; }
   .overlay-sub { font-size:14px; color:rgba(255,255,255,0.85); text-align:center; padding:0 20px; }
@@ -64,7 +67,7 @@
   .name-form { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; padding:0 24px; }
   .name-input { width:100%; padding:10px 16px; border:2px solid var(--yellow); border-radius:12px; font-family:'Nunito',sans-serif; font-size:15px; background:rgba(255,255,255,0.95); color:var(--text-dark); text-align:center; }
   .name-input::placeholder { color:#aaa; }
-  .save-status { font-size:12px; color:rgba(255,255,255,0.8); text-align:center; min-height:18px; }
+  .save-status { font-size:13px; color:#fff; text-align:center; min-height:20px; font-weight:700; }
 
   #page-leaderboard { padding:20px 16px; max-width:500px; margin:0 auto; }
   .page-title { font-family:'Baloo 2',cursive; font-weight:800; font-size:26px; color:var(--orange); margin-bottom:4px; }
@@ -114,8 +117,6 @@
   footer { background:var(--brown); color:rgba(255,255,255,0.7); text-align:center; font-size:12px; padding:16px; margin-top:32px; }
   footer strong { color:#fff; font-family:'Baloo 2',cursive; }
 
-  @keyframes fall { from{transform:translateY(-60px)} to{transform:translateY(110%)} }
-  @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(0);opacity:0} }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
 </style>
 </head>
@@ -216,10 +217,8 @@
 
 <script type="module">
 
-import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAnalytics }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-import { getDatabase, ref, push, query, orderByChild, limitToLast, get }
-                          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyDRCkGvqPsYbQBickP8nD5RpYy3UNTT9mk",
@@ -228,87 +227,79 @@ const app = initializeApp({
   projectId: "moms-magic-fa570",
   storageBucket: "moms-magic-fa570.firebasestorage.app",
   messagingSenderId: "249637399473",
-  appId: "1:249637399473:web:2686ae053b5bec75cf2b90",
-  measurementId: "G-884C7EPG4M"
+  appId: "1:249637399473:web:2686ae053b5bec75cf2b90"
 });
-getAnalytics(app);
 const db = getDatabase(app);
 
-// ── FIX 1: Save score to a local variable before any reset ──
+// Score captured at game-over, safe from reset
 let savedScore = 0;
 
 async function addScore(name, district, scoreVal) {
   try {
     await push(ref(db, 'scores'), {
-      name,
-      district,
-      score: scoreVal,   // use passed value, not global
+      name, district,
+      score: Number(scoreVal),
       date: new Date().toLocaleDateString('en-IN')
     });
-    console.log('✅ Score saved:', name, scoreVal);
     return true;
   } catch(e) {
-    console.error('❌ Save failed:', e.message);
+    console.error('Save error:', e.message);
     return false;
   }
 }
 
+// No orderByChild — sorts in JS, no Firebase index needed
 async function renderLeaderboard() {
   const lbList = document.getElementById('lbList');
   lbList.innerHTML = '<div class="lb-empty">Loading…</div>';
   try {
-    // FIX 2: Use get() without orderByChild to avoid index error,
-    // then sort in JS — works even without Firebase index rule
     const snap = await get(ref(db, 'scores'));
     if (!snap.exists()) {
       lbList.innerHTML = '<div class="lb-empty">No scores yet!<br>Be the first to play 🎮</div>';
       return;
     }
-    const scores = [];
-    snap.forEach(c => scores.push(c.val()));
-    // Sort by score descending in JavaScript (no index needed)
-    scores.sort((a, b) => b.score - a.score);
-    const top10 = scores.slice(0, 10);
+    const all = [];
+    snap.forEach(child => all.push(child.val()));
+    all.sort((a, b) => Number(b.score) - Number(a.score));
+    const top = all.slice(0, 10);
     const medals = ['🥇','🥈','🥉'];
-    lbList.innerHTML = top10.map((s, i) => `
-      <div class="lb-row ${i===0?'top1':i===1?'top2':i===2?'top3':''}">
+    lbList.innerHTML = top.map((s, i) => `
+      <div class="lb-row ${['top1','top2','top3'][i]||''}">
         <div class="lb-medal">${medals[i]||''}</div>
         <div class="lb-rank" style="color:${i<3?'var(--orange)':'var(--text-mid)'}">${i+1}</div>
         <div style="flex:1">
-          <div class="lb-name">${s.name}</div>
-          <div class="lb-district">${s.district||'Bihar'} · ${s.date}</div>
+          <div class="lb-name">${s.name||'Anonymous'}</div>
+          <div class="lb-district">${s.district||'Bihar'} · ${s.date||''}</div>
         </div>
-        <div class="lb-score">${s.score}</div>
+        <div class="lb-score">${Number(s.score)}</div>
       </div>`).join('');
   } catch(e) {
-    console.error('❌ Load failed:', e.message);
     lbList.innerHTML = `<div class="lb-empty">Could not load scores.<br>${e.message}</div>`;
   }
 }
 
-// ── Navigation ────────────────────────────────────────
 window.showPage = function(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  const order = ['game','leaderboard','product','faq'];
-  document.querySelectorAll('.nav-tab')[order.indexOf(name)].classList.add('active');
-  if(name === 'leaderboard') renderLeaderboard();
+  ['game','leaderboard','product','faq'].forEach((n,i) => {
+    if(n===name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
+  });
+  if(name==='leaderboard') renderLeaderboard();
 };
 window.renderLeaderboard = renderLeaderboard;
 
-// ── FAQ ───────────────────────────────────────────────
 const faqs = [
   { q:'Where can I buy Moms Magic biscuits?', a:'Moms Magic biscuits are available at kirana stores, grocery shops, and supermarkets across Bhagalpur, Patna, Muzaffarpur, Gaya, Darbhanga, and Purnia districts of Bihar.' },
   { q:'Are Moms Magic biscuits safe for children?', a:'Yes! All Moms Magic biscuits are FSSAI certified and manufactured under strict hygiene conditions. Our Milk Biscuits are specially formulated with nutrition for growing children.' },
   { q:'What flavours are available?', a:'We offer Glucose, Cream (Strawberry, Vanilla, Chocolate), Marie Lite, Milk Biscuit, and Choco Delight. New flavours are added regularly!' },
   { q:'How long is the shelf life?', a:'Our biscuits have a shelf life of 6 months from the date of manufacturing. Always check the date printed on the back of the pack.' },
-  { q:'Are there any artificial colours or preservatives?', a:'Moms Magic biscuits use only approved food-grade ingredients. We minimize artificial additives and are committed to clean labelling.' },
-  { q:'How do I contact Moms Magic?', a:'You can reach us at your nearest district distributor. Ask your local kirana shop owner for our distributor contact, or look for the number printed on the biscuit pack.' },
+  { q:'Are there artificial colours or preservatives?', a:'Moms Magic biscuits use only approved food-grade ingredients. We minimize artificial additives and are committed to clean labelling.' },
+  { q:'How do I contact Moms Magic?', a:'Ask your local kirana shop owner for our distributor contact, or look for the number printed on the biscuit pack.' },
   { q:'How does the leaderboard game work?', a:'Catch the falling Moms Magic biscuits using the left/right buttons. Each biscuit you catch adds points. Miss 3 biscuits and the game ends. Enter your name and district to appear on the Top 10 leaderboard!' },
   { q:'Is this website only for Bihar?', a:'Currently Moms Magic is available across 6 districts of Bihar. We plan to expand to more districts soon. Stay tuned!' },
 ];
-document.getElementById('faqList').innerHTML = faqs.map((f,i)=>`
+document.getElementById('faqList').innerHTML = faqs.map((f,i) => `
   <div class="faq-item" id="faq${i}">
     <div class="faq-q" onclick="toggleFaq(${i})">
       <div class="faq-q-text">${f.q}</div><div class="faq-arrow">▼</div>
@@ -317,22 +308,22 @@ document.getElementById('faqList').innerHTML = faqs.map((f,i)=>`
   </div>`).join('');
 window.toggleFaq = i => document.getElementById('faq'+i).classList.toggle('open');
 
-// ── Game Engine ───────────────────────────────────────
+// Game
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
 const BISCUITS = [
-  { emoji:'🍪', label:'Glucose', pts:10,  color:'#F5A623' },
-  { emoji:'🥐', label:'Cream',   pts:15,  color:'#FF6B9D' },
-  { emoji:'🌾', label:'Marie',   pts:10,  color:'#7CBF5B' },
-  { emoji:'🥛', label:'Milk',    pts:20,  color:'#5BB8F5' },
-  { emoji:'🍫', label:'Choco',   pts:25,  color:'#9B6B3A' },
-  { emoji:'💀', label:'Bad',     pts:-1,  color:'#888', bad:true },
+  { emoji:'🍪', label:'Glucose', pts:10, color:'#F5A623' },
+  { emoji:'🥐', label:'Cream',   pts:15, color:'#FF6B9D' },
+  { emoji:'🌾', label:'Marie',   pts:10, color:'#7CBF5B' },
+  { emoji:'🥛', label:'Milk',    pts:20, color:'#5BB8F5' },
+  { emoji:'🍫', label:'Choco',   pts:25, color:'#9B6B3A' },
+  { emoji:'💀', label:'Bad',     pts:0,  color:'#888', bad:true },
 ];
 
 let state='idle', score=0, lives=3, level=1;
-let basket={x:W/2, w:80, h:22, speed:8};
+let basket={ x:W/2, w:80, h:22, speed:8 };
 let items=[], particles=[], keys={}, frameCount=0;
 let spawnInterval=90, fallSpeed=2.8;
 let leftHeld=false, rightHeld=false;
@@ -358,8 +349,7 @@ function updateHUD() {
 function spawnItem() {
   const pool = level>3 ? BISCUITS : BISCUITS.slice(0,-1);
   const type = pool[Math.floor(Math.random()*pool.length)];
-  items.push({x:30+Math.random()*(W-60), y:-30, type, size:30,
-              speed:fallSpeed+Math.random()*1.2});
+  items.push({ x:30+Math.random()*(W-60), y:-30, type, size:30, speed:fallSpeed+Math.random()*1.2 });
 }
 
 function spawnParticles(x,y,color,caught) {
@@ -422,7 +412,6 @@ function loop() {
   if(leftHeld||keys['ArrowLeft'])  basket.x=Math.max(basket.w/2,basket.x-basket.speed);
   if(rightHeld||keys['ArrowRight'])basket.x=Math.min(W-basket.w/2,basket.x+basket.speed);
   if(frameCount%spawnInterval===0)spawnItem();
-
   const by=H-60;
   for(let i=items.length-1;i>=0;i--){
     const it=items[i]; it.y+=it.speed;
@@ -451,15 +440,14 @@ function loop() {
     if(p.alpha<=0)particles.splice(i,1);
   }
   drawParticles();drawItems();drawBasket();
-  ctx.font='bold 14px Baloo 2';ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.font='bold 14px Nunito';ctx.fillStyle='rgba(0,0,0,0.25)';
   ctx.textAlign='left';ctx.fillText('Lv.'+level,10,22);
   requestAnimationFrame(loop);
 }
 
 function endGame(){
   state='over';
-  // FIX 3: Save score to local variable BEFORE showing game over screen
-  savedScore = score;
+  savedScore = score;  // captured before reset
   document.getElementById('finalScore').textContent = savedScore;
   document.getElementById('saveStatus').textContent = '';
   document.getElementById('saveBtn').disabled = false;
@@ -467,44 +455,42 @@ function endGame(){
   document.getElementById('gameOverOverlay').classList.add('show');
 }
 
-// FIX 4: saveScore now uses savedScore (captured at game over time)
 window.saveScore = async function(){
-  const name     = document.getElementById('playerName').value.trim() || 'Anonymous';
-  const district = document.getElementById('playerDistrict').value || 'Bihar';
+  const name     = document.getElementById('playerName').value.trim()||'Anonymous';
+  const district = document.getElementById('playerDistrict').value||'Bihar';
   const btn      = document.getElementById('saveBtn');
   const status   = document.getElementById('saveStatus');
+  const scoreToSave = savedScore;
 
-  btn.disabled = true;
-  btn.textContent = '⏳ Saving…';
-  status.textContent = '';
+  btn.disabled=true;
+  btn.textContent='⏳ Saving…';
+  status.textContent='';
 
-  const ok = await addScore(name, district, savedScore);
-
-  if(ok) {
-    status.textContent = '✅ Score saved!';
-    setTimeout(() => startGame(), 800);
+  const ok = await addScore(name, district, scoreToSave);
+  if(ok){
+    status.textContent='✅ Saved! Score: '+scoreToSave;
+    setTimeout(()=>startGame(), 900);
   } else {
-    status.textContent = '❌ Could not save. Check connection.';
-    btn.disabled = false;
-    btn.textContent = '💾 Try Again';
+    status.textContent='❌ Could not save. Try again.';
+    btn.disabled=false;
+    btn.textContent='💾 Try Again';
   }
 };
 
-// ── Controls ──────────────────────────────────────────
 document.addEventListener('keydown',e=>{keys[e.key]=true;
   if(['ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 
 const leftBtn=document.getElementById('leftBtn');
 const rightBtn=document.getElementById('rightBtn');
-leftBtn.addEventListener('touchstart', e=>{leftHeld=true;e.preventDefault();},{passive:false});
-leftBtn.addEventListener('touchend',   ()=>leftHeld=false);
-leftBtn.addEventListener('mousedown',  ()=>leftHeld=true);
-leftBtn.addEventListener('mouseup',    ()=>leftHeld=false);
+leftBtn.addEventListener('touchstart',e=>{leftHeld=true;e.preventDefault();},{passive:false});
+leftBtn.addEventListener('touchend',()=>leftHeld=false);
+leftBtn.addEventListener('mousedown',()=>leftHeld=true);
+leftBtn.addEventListener('mouseup',()=>leftHeld=false);
 rightBtn.addEventListener('touchstart',e=>{rightHeld=true;e.preventDefault();},{passive:false});
-rightBtn.addEventListener('touchend',  ()=>rightHeld=false);
-rightBtn.addEventListener('mousedown', ()=>rightHeld=true);
-rightBtn.addEventListener('mouseup',   ()=>rightHeld=false);
+rightBtn.addEventListener('touchend',()=>rightHeld=false);
+rightBtn.addEventListener('mousedown',()=>rightHeld=true);
+rightBtn.addEventListener('mouseup',()=>rightHeld=false);
 
 let touchStartX=null;
 canvas.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;e.preventDefault();},{passive:false});
@@ -516,7 +502,6 @@ canvas.addEventListener('touchmove',e=>{
 },{passive:false});
 canvas.addEventListener('touchend',()=>touchStartX=null);
 
-// ── Init ──────────────────────────────────────────────
 drawBackground();
 drawBasket();
 renderLeaderboard();
