@@ -27,6 +27,11 @@
   .hero-title{font-family:"Baloo 2",cursive;font-weight:800;font-size:26px;color:var(--primary-dark);line-height:1.1;}
   .hero-title span{color:var(--primary-light);}
   .hero-sub{font-size:13px;color:var(--text-mid);margin-top:4px;}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 16px 10px;max-width:760px;margin:0 auto;}
+  .stats-card{background:#fff;border:2px solid var(--accent);border-radius:16px;padding:12px 10px;text-align:center;box-shadow:0 2px 10px rgba(74,124,89,0.08);min-height:92px;display:flex;flex-direction:column;justify-content:center;}
+  .stats-value{font-family:"Baloo 2",cursive;font-weight:800;font-size:28px;line-height:1;color:var(--primary-dark);}
+  .stats-label{font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.4px;margin-top:6px;line-height:1.2;}
+  .stats-note{font-size:10px;color:var(--text-mid);margin-top:4px;line-height:1.2;}
   .game-wrap{position:relative;margin:0 auto;max-width:400px;}
   #gameCanvas{display:block;width:100%;touch-action:none;border-radius:16px;border:3px solid var(--primary);background:#C8E6C9;}
   .game-hud{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;max-width:400px;margin:0 auto;}
@@ -187,6 +192,20 @@
   <div style="padding:20px 16px;max-width:500px;margin:0 auto;">
     <div class="page-title">🏆 Top 10 Players</div>
     <div class="page-sub">Best Biscuit Catchers across Bihar</div>
+    <div class="stats-grid" aria-label="Analytics summary" style="margin-bottom:14px;">
+      <div class="stats-card">
+        <div class="stats-value" id="publicVisitsCount">0</div>
+        <div class="stats-label">Website Visits</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-value" id="publicPlayedCount">0</div>
+        <div class="stats-label">Players Played</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-value" id="publicSavedCount">0</div>
+        <div class="stats-label">Scores Saved</div>
+      </div>
+    </div>
     <div class="live-badge"><div class="live-dot"></div> Live — updates automatically</div>
     <button class="refresh-btn" onclick="renderLeaderboard()">↻ Refresh</button>
     <div class="lb-card">
@@ -257,6 +276,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 firebase.initializeApp({
@@ -271,6 +291,107 @@ firebase.initializeApp({
 });
 const db=firebase.database(), auth=firebase.auth();
 auth.signInAnonymously().then(()=>console.log("✅ Auth OK")).catch(e=>console.warn("⚠️",e.message));
+
+// ── HIDDEN ANALYTICS ─────────────────────────────────────────────────────────
+const analyticsSessionKeys={
+  visits:"momsmagic_analytics_visit",
+  playersPlayed:"momsmagic_analytics_played",
+  scoresEntered:"momsmagic_analytics_scored",
+};
+const analyticsFileName="momsmagic-analytics.xlsx";
+const analyticsExportEnabled=/[?&]analyticsExport=1(?:&|$)/.test(location.search)||localStorage.getItem("momsmagic_analytics_export")==="1";
+
+function downloadFile(filename, payload, mimeType){
+  const blob=payload instanceof Blob ? payload : new Blob([payload],{type:mimeType});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;
+  link.download=filename;
+  link.style.display="none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+async function incrementHiddenAnalytics(metric, sessionKey){
+  try{
+    if(sessionKey && sessionStorage.getItem(sessionKey)) return false;
+    if(sessionKey) sessionStorage.setItem(sessionKey,"1");
+    if(!auth.currentUser) await auth.signInAnonymously();
+    await db.ref(`hiddenAnalytics/${metric}`).transaction(value=>(Number(value)||0)+1);
+    await db.ref("hiddenAnalytics/lastUpdated").set(Date.now());
+    return true;
+  }catch(e){
+    console.warn("⚠️ analytics",e.message);
+    return false;
+  }
+}
+
+async function fetchHiddenAnalytics(){
+  const snap=await db.ref("hiddenAnalytics").once("value");
+  const data=snap.val()||{};
+  return {
+    visits:Number(data.visits)||0,
+    playersPlayed:Number(data.playersPlayed)||0,
+    scoresEntered:Number(data.scoresEntered)||0,
+    lastUpdated:Number(data.lastUpdated)||Date.now(),
+  };
+}
+
+async function refreshVisibleAnalytics(){
+  const visitsEl=document.getElementById("publicVisitsCount");
+  const playedEl=document.getElementById("publicPlayedCount");
+  const savedEl=document.getElementById("publicSavedCount");
+  if(!visitsEl || !playedEl || !savedEl) return;
+  try{
+    const data=await fetchHiddenAnalytics();
+    visitsEl.textContent=String(data.visits);
+    playedEl.textContent=String(data.playersPlayed);
+    savedEl.textContent=String(data.scoresEntered);
+  }catch(e){
+    console.warn("⚠️ analytics refresh",e.message);
+  }
+}
+
+async function exportHiddenAnalytics(){
+  try{
+    const data=await fetchHiddenAnalytics();
+    const updatedAt=new Date(data.lastUpdated).toLocaleString("en-IN");
+    if(window.XLSX){
+      const workbook=XLSX.utils.book_new();
+      const sheetData=[
+        {Metric:"Website entries",Count:data.visits,"Updated at":updatedAt},
+        {Metric:"Players who played the game",Count:data.playersPlayed,"Updated at":updatedAt},
+        {Metric:"Players who entered score",Count:data.scoresEntered,"Updated at":updatedAt},
+      ];
+      const worksheet=XLSX.utils.json_to_sheet(sheetData);
+      XLSX.utils.book_append_sheet(workbook,worksheet,"Analytics");
+      const output=XLSX.write(workbook,{bookType:"xlsx",type:"array"});
+      downloadFile(analyticsFileName,output,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    }else{
+      const csv=[
+        "Metric,Count,Updated at",
+        `Website entries,${data.visits},"${updatedAt}"`,
+        `Players who played the game,${data.playersPlayed},"${updatedAt}"`,
+        `Players who entered score,${data.scoresEntered},"${updatedAt}"`,
+      ].join("\n");
+      downloadFile("momsmagic-analytics.csv",csv,"text/csv;charset=utf-8");
+    }
+  }catch(e){
+    console.warn("⚠️ analytics export",e.message);
+  }
+}
+
+async function trackHiddenAnalytics(metric, sessionKey, shouldExport=true){
+  const changed=await incrementHiddenAnalytics(metric, sessionKey);
+  if(changed && shouldExport && analyticsExportEnabled) await exportHiddenAnalytics();
+  await refreshVisibleAnalytics();
+}
+
+trackHiddenAnalytics("visits",analyticsSessionKeys.visits,false);
+refreshVisibleAnalytics();
+setInterval(refreshVisibleAnalytics,15000);
 
 // ── LEADERBOARD ───────────────────────────────────────────────────────────────
 const medals=["🥇","🥈","🥉"];
@@ -340,6 +461,7 @@ async function saveScore(){
       lastHad: quizAns.q1||"",
       favFlavor: quizAns.q2||""
     });
+    await trackHiddenAnalytics("scoresEntered",analyticsSessionKeys.scoresEntered,true);
     status.textContent="✅ Saved! Score: "+savedScore;
     quizAns={q1:"",q2:""};
     setTimeout(()=>startGame(),900);
@@ -414,6 +536,7 @@ function updateHUD(){
 function startGame(){
   document.getElementById("startOverlay").classList.remove("show");
   document.getElementById("gameOverOverlay").classList.remove("show");
+  trackHiddenAnalytics("playersPlayed",analyticsSessionKeys.playersPlayed,true);
   // Reset quiz selections
   document.querySelectorAll(".quiz-opt").forEach(b=>b.classList.remove("selected"));
   quizAns={q1:"",q2:""};
