@@ -128,6 +128,7 @@
     <div class="hero-title">Catch the <span>Biscuits!</span></div>
     <div class="hero-sub">Catch Moms Magic packs · Score by price · Avoid bad items!</div>
   </div>
+  
   <div class="game-hud">
     <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="scoreDisplay">0</div></div>
     <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="levelDisplay">1</div></div>
@@ -172,11 +173,16 @@
       <div class="name-form">
         <div class="overlay-sub">Enter your name for leaderboard</div>
         <input class="name-input" id="playerName" type="text" placeholder="Your name" maxlength="20">
+        <input class="name-input" id="detectedShopName" type="text" placeholder="Detecting shop location..." readonly style="margin-top:4px;background:#f5f7fb;">
+        <button class="overlay-btn" type="button" onclick="captureOutletLocation(true)" style="width:100%;margin-top:6px;background:#8fb06d;">📍 Retry location</button>
         <select class="name-input" id="playerDistrict" style="margin-top:4px;">
           <option value="">Select district</option>
+          <option value="shop1">shop1</option>
           <option>Bhagalpur</option><option>Patna</option><option>Muzaffarpur</option>
           <option>Gaya</option><option>Darbhanga</option><option>Purnia</option>
         </select>
+        <input class="name-input" id="purchasedQuantity" type="number" placeholder="Purchased quantity" min="0" step="1" style="margin-top:4px;">
+        <div class="save-status" id="geoStatus" style="margin-top:6px;"></div>
         <div class="save-status" id="saveStatus"></div>
         <button class="overlay-btn" id="saveBtn" onclick="saveScore()" style="width:100%;">💾 Save &amp; Play Again</button>
       </div>
@@ -192,20 +198,6 @@
   <div style="padding:20px 16px;max-width:500px;margin:0 auto;">
     <div class="page-title">🏆 Top 10 Players</div>
     <div class="page-sub">Best Biscuit Catchers across Bihar</div>
-    <div class="stats-grid" aria-label="Analytics summary" style="margin-bottom:14px;">
-      <div class="stats-card">
-        <div class="stats-value" id="publicVisitsCount">0</div>
-        <div class="stats-label">Website Visits</div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-value" id="publicPlayedCount">0</div>
-        <div class="stats-label">Players Played</div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-value" id="publicSavedCount">0</div>
-        <div class="stats-label">Scores Saved</div>
-      </div>
-    </div>
     <div class="live-badge"><div class="live-dot"></div> Live — updates automatically</div>
     <button class="refresh-btn" onclick="renderLeaderboard()">↻ Refresh</button>
     <div class="lb-card">
@@ -354,6 +346,157 @@ async function refreshVisibleAnalytics(){
   }
 }
 
+const seedOutletShops=[{
+  name:"shop1",
+  latitude:25.6066772,
+  longitude:85.0659904,
+  radius:50,
+  district:"shop1",
+}];
+
+let outletShops=[...seedOutletShops];
+
+function normalizeOutletShop(value, fallbackName=""){
+  const name=String(value?.name || value?.shopName || fallbackName || "").trim();
+  const latitude=Number(value?.latitude ?? value?.lat ?? value?.shopLatitude);
+  const longitude=Number(value?.longitude ?? value?.lng ?? value?.shopLongitude);
+  const radius=Number(value?.radius ?? value?.radiusMeters ?? value?.shopRadiusMeters ?? 50);
+  const district=String(value?.district || value?.shopDistrict || name || "").trim();
+  if(!name || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return {name, latitude, longitude, radius:Number.isFinite(radius)&&radius>0?radius:50, district};
+}
+
+function applyOutletData(snapshotValue){
+  const nextOutlets=[];
+  if(Array.isArray(snapshotValue)){
+    snapshotValue.forEach((item,index)=>{
+      const shop=normalizeOutletShop(item, `shop${index+1}`);
+      if(shop) nextOutlets.push(shop);
+    });
+  }else if(snapshotValue && typeof snapshotValue==="object"){
+    Object.entries(snapshotValue).forEach(([key,item])=>{
+      const shop=normalizeOutletShop(item, key);
+      if(shop) nextOutlets.push(shop);
+    });
+  }
+  outletShops=nextOutlets.length ? nextOutlets : [...seedOutletShops];
+}
+
+function listenForOutletData(){
+  try{
+    db.ref("outlets").on("value",snap=>{
+      applyOutletData(snap.val());
+      if(geoLocationState.latitude!==null && geoLocationState.longitude!==null){
+        matchOutletShop(geoLocationState.latitude, geoLocationState.longitude, geoLocationState.accuracy);
+      }
+    },err=>{
+      console.warn("⚠️ outlet data", err.message);
+      outletShops=[...seedOutletShops];
+    });
+  }catch(err){
+    console.warn("⚠️ outlet data", err.message);
+    outletShops=[...seedOutletShops];
+  }
+}
+
+let geoLocationState={
+  status:"idle",
+  latitude:null,
+  longitude:null,
+  accuracy:null,
+  matchedShop:null,
+};
+let geoLocationPrompted=false;
+
+function distanceMeters(lat1, lon1, lat2, lon2){
+  const earthRadius=6371000;
+  const toRadians=value=>value*Math.PI/180;
+  const deltaLat=toRadians(lat2-lat1);
+  const deltaLon=toRadians(lon2-lon1);
+  const a=Math.sin(deltaLat/2)**2+
+    Math.cos(toRadians(lat1))*Math.cos(toRadians(lat2))*Math.sin(deltaLon/2)**2;
+  return 2*earthRadius*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function updateDetectedShopUi(message, shop){
+  const shopInput=document.getElementById("detectedShopName");
+  const statusEl=document.getElementById("geoStatus");
+  if(shopInput){
+    shopInput.value=shop ? shop.name : "";
+    shopInput.placeholder=shop ? "Detected shop" : (message || "Detecting shop location...");
+  }
+  if(statusEl) statusEl.textContent=message || "";
+}
+
+function matchOutletShop(latitude, longitude, accuracy){
+  const matches=outletShops
+    .map(shop=>({
+      ...shop,
+      distance:distanceMeters(latitude,longitude,shop.latitude,shop.longitude),
+    }))
+    .filter(shop=>shop.distance<=shop.radius)
+    .sort((a,b)=>a.distance-b.distance);
+  const matchedShop=matches[0]||null;
+  geoLocationState={
+    status:matchedShop ? "matched" : "outside-radius",
+    latitude,
+    longitude,
+    accuracy,
+    matchedShop,
+  };
+  if(matchedShop){
+    const districtSelect=document.getElementById("playerDistrict");
+    if(districtSelect){
+      districtSelect.value=matchedShop.district || matchedShop.name;
+    }
+    updateDetectedShopUi(`${matchedShop.name} found within ${Math.round(matchedShop.distance)}m`, matchedShop);
+  }else{
+    updateDetectedShopUi("No shop found within 50m of your location.", null);
+  }
+}
+
+function captureOutletLocation(fromUserGesture=false){
+  if(geoLocationState.status==="matched" && !fromUserGesture){
+    return;
+  }
+  if(geoLocationPrompted && !fromUserGesture && geoLocationState.status!=="denied"){
+    return;
+  }
+  if(fromUserGesture){
+    geoLocationPrompted=true;
+  }else if(!geoLocationPrompted){
+    geoLocationPrompted=true;
+  }
+  if(!window.isSecureContext){
+    geoLocationState={status:"insecure-context",latitude:null,longitude:null,accuracy:null,matchedShop:null};
+    updateDetectedShopUi("Location needs HTTPS or localhost. Open this page from the installed app or a secure server, then tap Detect shop location.", null);
+    return;
+  }
+  if(!navigator.geolocation){
+    updateDetectedShopUi("Location is not supported in this browser.", null);
+    return;
+  }
+  updateDetectedShopUi(fromUserGesture ? "Requesting location permission..." : "Detecting shop location...", null);
+  navigator.geolocation.getCurrentPosition(
+    position=>{
+      const {latitude, longitude, accuracy}=position.coords;
+      matchOutletShop(latitude, longitude, accuracy);
+    },
+    error=>{
+      geoLocationState={status:"denied",latitude:null,longitude:null,accuracy:null,matchedShop:null};
+      const message=error && error.code===1
+        ? "Location permission was denied. Tap Detect shop location and allow access."
+        : error && error.code===2
+          ? "Position unavailable. Move to a clearer signal area and try again."
+          : error && error.code===3
+            ? "Location request timed out. Tap Detect shop location again."
+            : `Unable to capture location right now. ${error?.message || ""}`.trim();
+      updateDetectedShopUi(message, null);
+    },
+    {enableHighAccuracy:true, timeout:10000, maximumAge:0}
+  );
+}
+
 async function exportHiddenAnalytics(){
   try{
     const data=await fetchHiddenAnalytics();
@@ -380,6 +523,59 @@ async function exportHiddenAnalytics(){
     }
   }catch(e){
     console.warn("⚠️ analytics export",e.message);
+  }
+}
+
+function buildScoreExportRows(all){
+  return all.map((s,i)=>({
+    "Sl.no":i+1,
+    "Name":s.name||"",
+    "Lat":s.userLatitude ?? "",
+    "long":s.userLongitude ?? "",
+    "shop captured status":s.shopName ? "Captured" : "Not captured",
+    "shop name":s.shopName || "",
+    "Game score":Number(s.score)||0,
+    "Survey question1 response":s.lastHad || "",
+    "Survey question2 response":s.favFlavor || "",
+    "purchased quantity":s.purchaseQuantity ?? "",
+    "district":s.district || "",
+    "shop district":s.shopDistrict || "",
+    "shop latitude":s.shopLatitude ?? "",
+    "shop longitude":s.shopLongitude ?? "",
+    "shop radius meters":s.shopRadiusMeters ?? "",
+    "location accuracy meters":s.locationAccuracyMeters ?? "",
+    "timestamp":s.timestamp ? new Date(Number(s.timestamp)).toLocaleString("en-IN") : "",
+    "date":s.date || "",
+  }));
+}
+
+function makeScoreRow(entry,index){
+  return buildScoreExportRows([entry]).map(row=>({...row,"Sl.no":index+1}))[0];
+}
+
+async function exportScoreEntries(){
+  try{
+    const snap=await db.ref("scores").once("value");
+    const all=[];
+    snap.forEach(c=>{const v=c.val();if(v&&v.score!==undefined)all.push(v);});
+    all.sort((a,b)=>Number(b.score)-Number(a.score));
+    const rows=buildScoreExportRows(all);
+    if(window.XLSX){
+      const workbook=XLSX.utils.book_new();
+      const worksheet=XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook,worksheet,"Entries");
+      const output=XLSX.write(workbook,{bookType:"xlsx",type:"array"});
+      downloadFile("momsmagic-entries.xlsx",output,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    }else{
+      const header=Object.keys(rows[0]||{"Sl.no":"","Name":""});
+      const csv=[
+        header.join(","),
+        ...rows.map(row=>header.map(key=>`"${String(row[key] ?? "").replace(/"/g,'""')}"`).join(",")),
+      ].join("\n");
+      downloadFile("momsmagic-entries.csv",csv,"text/csv;charset=utf-8");
+    }
+  }catch(e){
+    alert(`Export failed: ${e.message}`);
   }
 }
 
@@ -449,20 +645,32 @@ let savedScore=0;
 async function saveScore(){
   const name=document.getElementById("playerName").value.trim()||"Anonymous";
   const district=document.getElementById("playerDistrict").value||"Bihar";
+  const detectedShop=document.getElementById("detectedShopName").value.trim();
+  const purchasedQuantity=Number(document.getElementById("purchasedQuantity").value||0);
   const btn=document.getElementById("saveBtn");
   const status=document.getElementById("saveStatus");
   btn.disabled=true; btn.textContent="⏳ Saving…"; status.textContent="";
   try{
     if(!auth.currentUser) await auth.signInAnonymously();
-    await db.ref("scores").push({
+    const entry={
       name, district, score:Number(savedScore),
       date:new Date().toLocaleDateString("en-IN"),
       timestamp:Date.now(),
       lastHad: quizAns.q1||"",
-      favFlavor: quizAns.q2||""
-    });
+      favFlavor: quizAns.q2||"",
+      purchaseQuantity:purchasedQuantity,
+      shopName: detectedShop || geoLocationState.matchedShop?.name || "",
+      shopDistrict: geoLocationState.matchedShop?.district || "",
+      shopLatitude: geoLocationState.matchedShop?.latitude ?? null,
+      shopLongitude: geoLocationState.matchedShop?.longitude ?? null,
+      shopRadiusMeters: geoLocationState.matchedShop?.radius ?? null,
+      userLatitude: geoLocationState.latitude,
+      userLongitude: geoLocationState.longitude,
+      locationAccuracyMeters: geoLocationState.accuracy,
+    };
+    await db.ref("scores").push(entry);
     await trackHiddenAnalytics("scoresEntered",analyticsSessionKeys.scoresEntered,true);
-    status.textContent="✅ Saved! Score: "+savedScore;
+    status.textContent="✅ Saved to Firebase! Score: "+savedScore;
     quizAns={q1:"",q2:""};
     setTimeout(()=>startGame(),900);
   }catch(e){
@@ -708,6 +916,8 @@ canvas.addEventListener("touchmove",e=>{
 canvas.addEventListener("touchend",()=>touchStartX=null);
 
 // Init
+listenForOutletData();
+window.addEventListener("load",()=>captureOutletLocation(false));
 drawBackground(); drawBasket(); initLeaderboard();
 </script>
 </body>
