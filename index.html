@@ -346,13 +346,38 @@ async function refreshVisibleAnalytics(){
   }
 }
 
-const seedOutletShops=[{
-  name:"shop1",
-  latitude:25.6066772,
-  longitude:85.0659904,
-  radius:50,
-  district:"shop1",
-}];
+const seedOutletShops=[
+  {name:"shop1", latitude:25.6066772, longitude:85.0659904, radius:50, district:"Patna"},
+  {name:"shop2", latitude:25.6071772, longitude:85.0663904, radius:50, district:"Patna"},
+  {name:"shop3", latitude:25.6076772, longitude:85.0667904, radius:50, district:"Patna"},
+  {name:"shop4", latitude:25.6081772, longitude:85.0671904, radius:50, district:"Patna"},
+  {name:"shop5", latitude:25.6086772, longitude:85.0675904, radius:50, district:"Patna"},
+  {name:"shop6", latitude:25.6091772, longitude:85.0679904, radius:50, district:"Patna"},
+  {name:"shop7", latitude:25.6096772, longitude:85.0683904, radius:50, district:"Patna"},
+  {name:"shop8", latitude:25.6101772, longitude:85.0687904, radius:50, district:"Patna"},
+  {name:"shop9", latitude:25.6106772, longitude:85.0691904, radius:50, district:"Patna"},
+  {name:"shop10", latitude:25.6111772, longitude:85.0695904, radius:50, district:"Patna"},
+  {name:"shop11", latitude:25.6116772, longitude:85.0699904, radius:50, district:"Patna"},
+  {name:"shop12", latitude:25.6121772, longitude:85.0703904, radius:50, district:"Patna"},
+  {name:"shop13", latitude:25.6126772, longitude:85.0707904, radius:50, district:"Patna"},
+  {name:"shop14", latitude:25.6131772, longitude:85.0711904, radius:50, district:"Patna"},
+  {name:"shop15", latitude:25.6136772, longitude:85.0715904, radius:50, district:"Patna"},
+  {name:"shop16", latitude:25.6141772, longitude:85.0719904, radius:50, district:"Patna"},
+  {name:"shop17", latitude:25.6146772, longitude:85.0723904, radius:50, district:"Patna"},
+  {name:"shop18", latitude:25.6151772, longitude:85.0727904, radius:50, district:"Patna"},
+  {name:"shop19", latitude:25.6156772, longitude:85.0731904, radius:50, district:"Patna"},
+  {name:"shop20", latitude:25.6161772, longitude:85.0735904, radius:50, district:"Patna"},
+  {name:"shop21", latitude:25.6166772, longitude:85.0739904, radius:50, district:"Patna"},
+  {name:"shop22", latitude:25.6171772, longitude:85.0743904, radius:50, district:"Patna"},
+  {name:"shop23", latitude:25.6176772, longitude:85.0747904, radius:50, district:"Patna"},
+  {name:"shop24", latitude:25.6181772, longitude:85.0751904, radius:50, district:"Patna"},
+  {name:"shop25", latitude:25.6186772, longitude:85.0755904, radius:50, district:"Patna"},
+  {name:"shop26", latitude:25.6191772, longitude:85.0759904, radius:50, district:"Patna"},
+  {name:"shop27", latitude:25.6196772, longitude:85.0763904, radius:50, district:"Patna"},
+  {name:"shop28", latitude:25.6201772, longitude:85.0767904, radius:50, district:"Patna"},
+  {name:"shop29", latitude:25.6206772, longitude:85.0771904, radius:50, district:"Patna"},
+  {name:"shop30", latitude:25.6211772, longitude:85.0775904, radius:50, district:"Patna"},
+];
 
 let outletShops=[...seedOutletShops];
 
@@ -588,6 +613,30 @@ async function trackHiddenAnalytics(metric, sessionKey, shouldExport=true){
 trackHiddenAnalytics("visits",analyticsSessionKeys.visits,false);
 refreshVisibleAnalytics();
 setInterval(refreshVisibleAnalytics,15000);
+
+// Record a minimal visit row so visitors who do nothing appear in exports
+async function recordVisitIfNeeded(){
+  try{
+    const key = 'momsmagic_visit_logged_v1';
+    if(sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key,'1');
+    if(!auth.currentUser) await auth.signInAnonymously().catch(()=>{});
+    const payload = {
+      name: 'Unknown',
+      timestamp: Date.now(),
+      date: new Date().toLocaleDateString('en-IN'),
+      referrer: document.referrer || '',
+      ua: navigator.userAgent || '',
+      path: location.pathname || '',
+    };
+    await db.ref('visitLogs').push(payload);
+  }catch(e){
+    console.warn('⚠️ visit log', e.message);
+  }
+}
+
+// record visit on page load
+recordVisitIfNeeded();
 
 // ── LEADERBOARD ───────────────────────────────────────────────────────────────
 const medals=["🥇","🥈","🥉"];
