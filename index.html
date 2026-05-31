@@ -1327,6 +1327,7 @@ async function saveScore(){
       name, score:Number(savedScore),
       date:new Date().toLocaleDateString("en-IN"),
       timestamp:Date.now(),
+      scoreTimestamp: Date.now(),
       entryTimestamp: websiteEntryTimestamp,
       leaderboardPeriodKey: getLeaderboardPeriodKeyFromTimestamp(websiteEntryTimestamp),
       lastHad: quizAns.q1||"",
