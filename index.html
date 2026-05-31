@@ -1229,10 +1229,8 @@ window.addEventListener("load",()=>{
     showPage("game");
   }
   const hasShopScan=applyShopCodeFromUrl();
-  if(!hasShopScan){
-    shopScanDetected=false;
-    captureOutletLocation(false);
-  }
+  if(!hasShopScan) shopScanDetected=false;
+  captureOutletLocation(false);
   renderAdminAccessUi();
   renderQrAdminPanel();
 });
