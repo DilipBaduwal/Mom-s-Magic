@@ -201,6 +201,12 @@
       <button class="overlay-btn" onclick="startGame()">▶ Start Playing</button>
     </div>
 
+    <div class="overlay" id="locationOverlay" style="z-index:11;">
+      <div class="overlay-title">Location Needed</div>
+      <div class="overlay-sub" id="locationOverlayText">This QR scan needs your location so we can save the entry correctly.</div>
+      <button class="overlay-btn" type="button" onclick="allowScanLocation()">📍 Allow location</button>
+    </div>
+
     <!-- GAME OVER OVERLAY -->
     <div class="overlay" id="gameOverOverlay">
       <div style="font-size:48px;">😢</div>
@@ -739,6 +745,25 @@ function captureOutletLocation(fromUserGesture=false){
   });
 }
 
+async function allowScanLocation(){
+  const overlay=document.getElementById("locationOverlay");
+  const text=document.getElementById("locationOverlayText");
+  if(text) text.textContent="Requesting location permission…";
+  const captured=await captureOutletLocation(true);
+  if(captured){
+    if(overlay) overlay.classList.remove("show");
+    if(text) text.textContent="This QR scan needs your location so we can save the entry correctly.";
+    return;
+  }
+  if(text){
+    text.textContent=geoLocationState.status==="insecure-context"
+      ? "Location capture needs https:// or localhost. file:// is blocked by the browser."
+      : geoLocationState.status==="location-denied"
+        ? "Location permission was denied. Please allow location access in your browser settings and try again."
+        : "Location could not be captured. Please try again.";
+  }
+}
+
 async function exportHiddenAnalytics(){
   try{
     const data=await fetchHiddenAnalytics();
@@ -1229,8 +1254,13 @@ window.addEventListener("load",()=>{
     showPage("game");
   }
   const hasShopScan=applyShopCodeFromUrl();
-  if(!hasShopScan) shopScanDetected=false;
-  captureOutletLocation(false);
+  if(hasShopScan){
+    const overlay=document.getElementById("locationOverlay");
+    if(overlay) overlay.classList.add("show");
+  }else{
+    shopScanDetected=false;
+    captureOutletLocation(false);
+  }
   renderAdminAccessUi();
   renderQrAdminPanel();
 });
