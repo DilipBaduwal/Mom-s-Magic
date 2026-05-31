@@ -895,8 +895,232 @@ trackHiddenAnalytics("visits",analyticsSessionKeys.visits,false);
 refreshVisibleAnalytics();
 setInterval(refreshVisibleAnalytics,15000);
 
+const LEADERBOARD_CUTOFF_HOUR=20;
+let leaderboardFinalizationPromise=null;
+let leaderboardAutoRefreshStarted=false;
+
+function pad2(n){
+  return String(n).padStart(2,"0");
+}
+
+function getLocalDateKey(date=new Date()){
+  return `${date.getFullYear()}-${pad2(date.getMonth()+1)}-${pad2(date.getDate())}`;
+}
+
+function addLocalDays(date, days){
+  const next=new Date(date);
+  next.setDate(next.getDate()+days);
+  return next;
+}
+
+function normalizePhoneKey(phoneNumber){
+  return String(phoneNumber || "").replace(/\D/g, "");
+}
+
+function getLeaderboardPeriodKeyFromTimestamp(timestamp){
+  const date=new Date(Number(timestamp) || Date.now());
+  if(date.getHours()>=LEADERBOARD_CUTOFF_HOUR) return getLocalDateKey(addLocalDays(date,1));
+  return getLocalDateKey(date);
+}
+
+function getLeaderboardEntryTimestamp(value){
+  return Number(value?.entryTimestamp || value?.websiteEntryTimestamp || value?.visitedAt || value?.timestamp || 0) || 0;
+}
+
+function getScoreLeaderboardPeriodKey(value){
+  if(value?.leaderboardPeriodKey) return String(value.leaderboardPeriodKey);
+  return getLeaderboardPeriodKeyFromTimestamp(getLeaderboardEntryTimestamp(value));
+}
+
+function getWinnerPhone(value){
+  return normalizePhoneKey(value?.phoneNumber || value?.personalNumber || value?.phone || "");
+}
+
+function compareLeaderboardEntries(a,b){
+  const scoreDiff=Number(b.score || 0)-Number(a.score || 0);
+  if(scoreDiff) return scoreDiff;
+  const entryDiff=Number(a.entryTimestamp || 0)-Number(b.entryTimestamp || 0);
+  if(entryDiff) return entryDiff;
+  return Number(a.timestamp || 0)-Number(b.timestamp || 0);
+}
+
+function dedupeBestPerPhone(entries){
+  const byPhone=new Map();
+  for(const entry of entries){
+    const phoneKey=getWinnerPhone(entry) || `entry:${entry.__key || Math.random().toString(36).slice(2)}`;
+    const existing=byPhone.get(phoneKey);
+    if(!existing || compareLeaderboardEntries(entry,existing)<0){
+      byPhone.set(phoneKey,entry);
+    }
+  }
+  return Array.from(byPhone.values());
+}
+
+function buildLeaderboardRow(value){
+  return {
+    name: value.name || "Anonymous",
+    score: Number(value.score) || 0,
+    phoneNumber: String(value.phoneNumber || value.personalNumber || "").trim(),
+    entryTimestamp: getScoreEntryTimestamp(value),
+    timestamp: Number(value.timestamp || 0) || 0,
+    date: value.date || "",
+    favFlavor: value.favFlavor || "",
+    lastHad: value.lastHad || "",
+    shopName: value.shopName || "",
+    leaderboardPeriodKey: getScoreLeaderboardPeriodKey(value),
+  };
+}
+
+async function fetchAllScores(){
+  const snap=await db.ref("scores").once("value");
+  const rows=[];
+  snap.forEach(child=>{
+    const value=child.val();
+    if(value && value.score!==undefined) rows.push({...value,__key:child.key});
+  });
+  return rows;
+}
+
+async function fetchWinnerPhoneSet(){
+  const phones=new Set();
+  const snap=await db.ref("winnerPhones").once("value");
+  snap.forEach(child=>{
+    const value=child.val();
+    const phone=normalizePhoneKey(child.key || value?.phoneNumber || value?.phone || "");
+    if(phone) phones.add(phone);
+  });
+  return phones;
+}
+
+async function fetchFinalizedPeriodSet(){
+  const periods=new Set();
+  const snap=await db.ref("leaderboardFinalizations").once("value");
+  snap.forEach(child=>{
+    if(child.key) periods.add(String(child.key));
+  });
+  return periods;
+}
+
+async function finalizeClosedLeaderboardPeriods(){
+  if(leaderboardFinalizationPromise) return leaderboardFinalizationPromise;
+
+  leaderboardFinalizationPromise=(async()=>{
+    const now=new Date();
+    const currentPeriodKey=getLeaderboardPeriodKeyFromTimestamp(now.getTime());
+    const allScores=await fetchAllScores();
+    const finalizedPeriods=await fetchFinalizedPeriodSet();
+    const ineligiblePhones=await fetchWinnerPhoneSet();
+    const grouped=new Map();
+
+    for(const score of allScores){
+      const row=buildLeaderboardRow(score);
+      const periodKey=row.leaderboardPeriodKey;
+      if(!grouped.has(periodKey)) grouped.set(periodKey,[]);
+      grouped.get(periodKey).push(row);
+    }
+
+    const pending=[];
+    grouped.forEach((rows, periodKey)=>{
+      if(periodKey < currentPeriodKey && !finalizedPeriods.has(periodKey)) pending.push({periodKey, rows});
+    });
+
+    if(!pending.length) return;
+
+    const updates={};
+    const finalizedAt=Date.now();
+
+    pending.sort((a,b)=>a.periodKey.localeCompare(b.periodKey));
+
+    for(const {periodKey, rows} of pending){
+      const eligibleRows=rows.filter(row=>{
+        const phoneKey=normalizePhoneKey(row.phoneNumber);
+        return phoneKey && !ineligiblePhones.has(phoneKey);
+      });
+
+      const bestByPhone=dedupeBestPerPhone(eligibleRows).sort(compareLeaderboardEntries);
+      const winners=bestByPhone.slice(0,3);
+
+      winners.forEach((winner,index)=>{
+        const rank=index+1;
+        const phoneKey=normalizePhoneKey(winner.phoneNumber);
+        const winnerRecord={
+          ...winner,
+          phoneNumber: phoneKey,
+          rank,
+          periodKey,
+          finalizedAt,
+        };
+        updates[`winners/${periodKey}/rank${rank}`]=winnerRecord;
+        updates[`winnerPhones/${phoneKey}`]={
+          phoneNumber: phoneKey,
+          name: winner.name || "",
+          score: Number(winner.score) || 0,
+          rank,
+          firstWonPeriodKey: periodKey,
+          firstWonAt: finalizedAt,
+        };
+        ineligiblePhones.add(phoneKey);
+      });
+
+      updates[`leaderboardFinalizations/${periodKey}`]={
+        periodKey,
+        finalizedAt,
+        winnerCount:winners.length,
+      };
+      finalizedPeriods.add(periodKey);
+    }
+
+    if(Object.keys(updates).length){
+      await db.ref().update(updates);
+    }
+  })().finally(()=>{
+    leaderboardFinalizationPromise=null;
+  });
+
+  return leaderboardFinalizationPromise;
+}
+
+async function getDailyLeaderboardRows(){
+  await finalizeClosedLeaderboardPeriods().catch(()=>{});
+  const currentPeriodKey=getLeaderboardPeriodKeyFromTimestamp(Date.now());
+  const ineligiblePhones=await fetchWinnerPhoneSet();
+  const allScores=await fetchAllScores();
+  const rows=allScores.map(buildLeaderboardRow).filter(row=>{
+    const phoneKey=normalizePhoneKey(row.phoneNumber);
+    return row.leaderboardPeriodKey===currentPeriodKey && phoneKey && !ineligiblePhones.has(phoneKey);
+  });
+  const bestByPhone=dedupeBestPerPhone(rows).sort(compareLeaderboardEntries);
+  return {rows:bestByPhone.slice(0,10), periodKey:currentPeriodKey};
+}
+
+function startLeaderboardAutoRefresh(){
+  if(leaderboardAutoRefreshStarted) return;
+  leaderboardAutoRefreshStarted=true;
+  setInterval(()=>{
+    if(lbAttached) renderLeaderboard();
+    else finalizeClosedLeaderboardPeriods().catch(()=>{});
+  },60000);
+}
+
 let cachedClientIpInfo=null;
 let pendingClientIpPromise=null;
+let cachedWebsiteEntryTimestamp=null;
+
+function getWebsiteEntryTimestamp(){
+  if(cachedWebsiteEntryTimestamp) return cachedWebsiteEntryTimestamp;
+  try{
+    const stored=sessionStorage.getItem("momsmagic_website_entry_timestamp_v1");
+    if(stored && !Number.isNaN(Number(stored))){
+      cachedWebsiteEntryTimestamp=Number(stored);
+      return cachedWebsiteEntryTimestamp;
+    }
+  }catch(_e){}
+  cachedWebsiteEntryTimestamp=Date.now();
+  try{
+    sessionStorage.setItem("momsmagic_website_entry_timestamp_v1",String(cachedWebsiteEntryTimestamp));
+  }catch(_e){}
+  return cachedWebsiteEntryTimestamp;
+}
 
 async function fetchJsonWithTimeout(url, timeoutMs=3000){
   const controller=new AbortController();
@@ -979,13 +1203,17 @@ async function recordVisitIfNeeded(){
     sessionStorage.setItem(key,'1');
     await ensureFirebaseAuthReady().catch(()=>{});
     const ipInfo=await getClientIpInfo().catch(()=>({ipAddress:"",ipProvider:""}));
+    const websiteEntryTimestamp=getWebsiteEntryTimestamp();
     const payload = {
       name: 'Unknown',
-      timestamp: Date.now(),
+      timestamp: websiteEntryTimestamp,
+      visitedAt: Date.now(),
       date: new Date().toLocaleDateString('en-IN'),
       referrer: document.referrer || '',
       ua: navigator.userAgent || '',
       path: location.pathname || '',
+      entryTimestamp: websiteEntryTimestamp,
+      leaderboardPeriodKey: getLeaderboardPeriodKeyFromTimestamp(websiteEntryTimestamp),
       ipAddress: ipInfo.ipAddress || '',
       ipProvider: ipInfo.ipProvider || '',
     };
@@ -1003,41 +1231,43 @@ const medals=["🥇","🥈","🥉"];
 let lbAttached=false;
 
 function buildLbHtml(all){
-  all.sort((a,b)=>Number(b.score)-Number(a.score));
   return all.slice(0,10).map((s,i)=>`
     <div class="lb-row ${i===0?"top1":i===1?"top2":i===2?"top3":""}">
       <div class="lb-medal">${medals[i]||""}</div>
       <div class="lb-rank" style="color:${i<3?"var(--primary)":"var(--text-mid)"}">${i+1}</div>
       <div style="flex:1">
         <div class="lb-name">${s.name||"Anonymous"}</div>
-        <div class="lb-district">${s.date||""}</div>
+        <div class="lb-district">${s.entryTimestamp ? new Date(Number(s.entryTimestamp)).toLocaleString("en-IN") : (s.date||"")}</div>
         ${s.favFlavor?`<div style="font-size:10px;color:var(--primary);margin-top:2px;">❤️ ${s.favFlavor}</div>`:""}
       </div>
       <div class="lb-score">${Number(s.score)}</div>
     </div>`).join("");
 }
 
-function initLeaderboard(){
-  if(lbAttached)return; lbAttached=true;
-  const lbList=document.getElementById("lbList");
-  db.ref("scores").on("value",(snap)=>{
-    if(!snap.exists()){lbList.innerHTML='<div class="lb-empty">No scores yet!<br>Be the first to play 🎮</div>';return;}
-    const all=[];
-    snap.forEach(c=>{const v=c.val();if(v&&v.score!==undefined)all.push(v);});
-    lbList.innerHTML=buildLbHtml(all);
-  },(err)=>{lbList.innerHTML=`<div class="lb-empty">❌ ${err.message}</div>`;});
-}
-
-function renderLeaderboard(){
-  if(!lbAttached){initLeaderboard();return;}
+async function refreshLeaderboardView(){
   const lbList=document.getElementById("lbList");
   lbList.innerHTML='<div class="lb-empty">Refreshing…</div>';
-  db.ref("scores").once("value").then(snap=>{
-    if(!snap.exists()){lbList.innerHTML='<div class="lb-empty">No scores yet! 🎮</div>';return;}
-    const all=[];
-    snap.forEach(c=>{const v=c.val();if(v&&v.score!==undefined)all.push(v);});
-    lbList.innerHTML=buildLbHtml(all);
-  }).catch(e=>{lbList.innerHTML=`<div class="lb-empty">❌ ${e.message}</div>`;});
+  try{
+    const {rows}=await getDailyLeaderboardRows();
+    if(!rows.length){
+      lbList.innerHTML='<div class="lb-empty">No scores yet for today!<br>Be the first to play 🎮</div>';
+      return;
+    }
+    lbList.innerHTML=buildLbHtml(rows);
+  }catch(err){
+    lbList.innerHTML=`<div class="lb-empty">❌ ${err.message}</div>`;
+  }
+}
+
+function initLeaderboard(){
+  if(lbAttached)return; lbAttached=true;
+  startLeaderboardAutoRefresh();
+  refreshLeaderboardView();
+}
+
+async function renderLeaderboard(){
+  if(!lbAttached){initLeaderboard();return;}
+  await refreshLeaderboardView();
 }
 
 // ── QUIZ STATE ────────────────────────────────────────────────────────────────
@@ -1086,10 +1316,13 @@ async function saveScore(){
   try{
     await ensureFirebaseAuthReady();
     const ipInfo=await getClientIpInfo().catch(()=>({ipAddress:"",ipProvider:""}));
+    const websiteEntryTimestamp=getWebsiteEntryTimestamp();
     const entry={
       name, score:Number(savedScore),
       date:new Date().toLocaleDateString("en-IN"),
       timestamp:Date.now(),
+      entryTimestamp: websiteEntryTimestamp,
+      leaderboardPeriodKey: getLeaderboardPeriodKeyFromTimestamp(websiteEntryTimestamp),
       lastHad: quizAns.q1||"",
       favFlavor: quizAns.q2||"",
       phoneNumber,
