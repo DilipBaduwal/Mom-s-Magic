@@ -321,7 +321,7 @@
     <div class="admin-hero">
       <div>
         <div class="page-title">🔐 QR Admin</div>
-        <div class="page-sub">Generate, verify, and print the 50 shop QR codes for store handoff.</div>
+        <div class="page-sub">Generate, verify, and print the 100 shop QR codes for store handoff.</div>
       </div>
       <div class="admin-actions">
         <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
@@ -337,20 +337,10 @@
       </div>
     </div>
     <div id="adminRestricted" class="admin-shell locked" style="display:none;">
-      <div class="admin-hero">
-        <div>
-          <div class="page-title">🔐 QR Admin</div>
-          <div class="page-sub">Generate, verify, and print the 50 shop QR codes for store handoff.</div>
-        </div>
-        <div class="admin-actions">
-          <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
-          <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
-        </div>
-      </div>
       <div class="qr-admin" id="qrAdminPanel">
         <div class="qr-admin-head">
           <div>
-            <div class="qr-admin-title">50 Shop QR Codes</div>
+            <div class="qr-admin-title">100 Shop QR Codes</div>
             <div class="qr-admin-sub">Open the admin page with <strong>?admin=1</strong> to print the QR set. Each QR opens the game page with the shop code prefilled so you can hand them to the shops instead of using geotagging.</div>
             <input class="qr-admin-field" id="qrBaseUrl" type="url" placeholder="Paste the public app URL here before printing">
           </div>
@@ -454,7 +444,7 @@ async function refreshVisibleAnalytics(){
 }
 
 const outletDistricts=[""];
-const seedOutletShops=Array.from({length:50},(_,index)=>{
+const seedOutletShops=Array.from({length:100},(_,index)=>{
   const shopNumber=index+1;
   const row=Math.floor(index/10);
   return {
