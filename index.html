@@ -341,9 +341,16 @@
         <div class="page-sub">Generate, verify, and print the 100 shop QR codes for store handoff.</div>
       </div>
       <div class="admin-actions">
-        <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
-        <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
-      </div>
+  <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
+
+  <button class="qr-admin-btn" type="button" onclick="downloadAllQRCodes()">
+    ⬇ Download 100 QRs
+  </button>
+
+  <button class="qr-admin-btn secondary" type="button" onclick="window.print()">
+    🖨 Print / Save PDF
+  </button>
+</div>
     </div>
     <div class="admin-auth" id="adminAuthPanel">
       <div class="admin-auth-card">
@@ -717,6 +724,48 @@ function renderQrAdminPanel(){
       qrBox.style.wordBreak="break-all";
     }
   });
+}
+async function downloadAllQRCodes(){
+
+  const cards = document.querySelectorAll(".qr-card");
+
+  if(!cards.length){
+    alert("No QR codes found.");
+    return;
+  }
+
+  let count = 1;
+
+  for(const card of cards){
+
+    const canvas = card.querySelector("canvas");
+    const img = card.querySelector("img");
+
+    let dataUrl = null;
+
+    if(canvas){
+      dataUrl = canvas.toDataURL("image/png");
+    }
+    else if(img){
+      dataUrl = img.src;
+    }
+
+    if(!dataUrl) continue;
+
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `qr${count}.png`;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    count++;
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+
+  alert(`${count - 1} QR codes downloaded.`);
 }
 
 function distanceMeters(lat1, lon1, lat2, lon2){
