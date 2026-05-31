@@ -174,6 +174,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('game')">🎮 Play</button>
     <button class="nav-tab" onclick="showPage('leaderboard')">🏆 Top 10</button>
+    <button class="nav-tab" onclick="showPage('winners')">🥇 Winners</button>
     <button class="nav-tab" onclick="showPage('product')">🥜 Products</button>
     <button class="nav-tab" onclick="showPage('faq')">❓ FAQ</button>
   </div>
@@ -258,6 +259,17 @@
     <div class="lb-card">
       <div class="lb-header"><div style="font-size:20px;">🏅</div><div class="lb-header-text">Moms Magic Hall of Fame</div></div>
       <div id="lbList"><div class="lb-empty">Connecting…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- WINNERS PAGE (Previous day top-3) -->
+<div id="page-winners" class="page">
+  <div style="padding:20px 16px;max-width:500px;margin:0 auto;">
+    <div class="page-title">🥇 Previous Day Winners</div>
+    <div class="page-sub">Celebrating yesterday's top players</div>
+    <div class="lb-card">
+      <div id="prevDayWinners"><div class="lb-empty">Loading winners…</div></div>
     </div>
   </div>
 </div>
@@ -1108,6 +1120,38 @@ function startLeaderboardAutoRefresh(){
   },60000);
 }
 
+async function loadPreviousDayWinners(){
+  const container=document.getElementById("prevDayWinners");
+  if(!container) return;
+  container.innerHTML='<div class="lb-empty">Refreshing…</div>';
+  try{
+    const allScores=await fetchAllScores();
+    const targetKey=getLocalDateKey(addLocalDays(new Date(),-1));
+    const rows=allScores.map(buildLeaderboardRow).filter(r=>r.leaderboardPeriodKey===targetKey);
+    const bestByPhone=dedupeBestPerPhone(rows).sort(compareLeaderboardEntries).slice(0,3);
+    if(!bestByPhone.length){
+      container.innerHTML=`<div class="lb-empty">No winners found for ${targetKey}.</div>`;
+      return;
+    }
+
+    const title=`Congratulations to our ${targetKey} winners`;
+    const note=`Rewards will be sent by 5pm today.`;
+    const list=bestByPhone.map((w,i)=>{
+      const name=escapeHtml(w.name||'Anonymous');
+      const score=Number(w.score||0);
+      return `<div style="padding:10px 12px;border-bottom:1px solid var(--accent-light);display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:800">#${i+1} ${name}</div><div style="font-size:12px;color:var(--text-mid)">Phone: ${w.phoneNumber||'—'}</div></div><div style="font-weight:900;font-size:20px">${score}</div></div>`;
+    }).join('');
+
+    container.innerHTML=`<div style="padding:10px 12px"><div style="font-weight:800;font-size:16px;margin-bottom:6px">${title}</div><div style="font-size:13px;color:var(--text-mid);margin-bottom:10px">${note}</div>${list}</div>`;
+  }catch(err){
+    container.innerHTML=`<div class="lb-empty">❌ ${err.message}</div>`;
+  }
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g,(s)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[s]);
+}
+
 let cachedClientIpInfo=null;
 let pendingClientIpPromise=null;
 let cachedWebsiteEntryTimestamp=null;
@@ -1363,8 +1407,9 @@ function showPage(name){
   document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
   document.getElementById("page-"+name).classList.add("active");
   document.body.classList.toggle("admin-mode", name==="admin");
-  ["game","leaderboard","product","faq"].forEach((n,i)=>{if(n===name)document.querySelectorAll(".nav-tab")[i].classList.add("active");});
+  ["game","leaderboard","winners","product","faq"].forEach((n,i)=>{if(n===name)document.querySelectorAll(".nav-tab")[i].classList.add("active");});
   if(name==="leaderboard"){initLeaderboard();renderLeaderboard();}
+  if(name==="winners"){loadPreviousDayWinners().catch(()=>{});}
 }
 
 function exitAdminMode(){
