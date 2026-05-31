@@ -423,74 +423,67 @@ function downloadFile(filename, payload, mimeType){
   link.style.display="none";
   document.body.appendChild(link);
   link.click();
-  async function saveScore(){
-    const name=document.getElementById("playerName").value.trim()||"Anonymous";
-    const phoneNumber=document.getElementById("phoneNumber").value.trim();
-    const districtField=document.getElementById("districtInput");
-    const resolvedShop=shopScanDetected ? geoLocationState.matchedShop : null;
-    const district=shopScanDetected ? "Patna" : String(districtField ? districtField.value : "").trim();
-    const btn=document.getElementById("saveBtn");
-    const status=document.getElementById("saveStatus");
-    status.textContent="";
-    if(!quizAns.q1 || !quizAns.q2){
-      status.textContent="Please answer both questions before saving.";
-      return;
-    }
-    if(!phoneNumber){
-      status.textContent="Please enter your phone number.";
-      return;
-    }
-    if(!/^[\+0-9][0-9\s-]{7,14}$/.test(phoneNumber)){
-      status.textContent="Please enter a valid phone number.";
-      return;
-    }
-    if(!district){
-      status.textContent="Please enter your district.";
-      return;
-    }
-    if(!resolvedShop && (geoLocationState.latitude===null || geoLocationState.longitude===null)){
-      const captured=await captureOutletLocation(true);
-      if(!captured || geoLocationState.latitude===null || geoLocationState.longitude===null){
-        status.textContent=geoLocationState.status==="insecure-context"
-          ? "Location capture needs https:// or localhost. file:// is blocked by the browser."
-          : geoLocationState.status==="location-denied"
-            ? "Location permission was denied. Please allow location access and try again."
-            : "Location could not be captured. Please try again.";
-        return;
-      }
-    }
-    btn.disabled=true; btn.textContent="⏳ Saving…";
-    try{
-      await ensureFirebaseAuthReady();
-      const entry={
-        name, score:Number(savedScore),
-        date:new Date().toLocaleDateString("en-IN"),
-        timestamp:Date.now(),
-        lastHad: quizAns.q1||"",
-        favFlavor: quizAns.q2||"",
-        phoneNumber,
-        district,
-        shopName: resolvedShop ? (resolvedShop.name || "") : "",
-        shopCode: resolvedShop ? (resolvedShop.shopCode || "") : "",
-        entryMode: resolvedShop ? "shop-scan" : "direct-location",
-        capturedViaLocation: !resolvedShop,
-        shopLatitude: resolvedShop?.latitude ?? null,
-        shopLongitude: resolvedShop?.longitude ?? null,
-        shopRadiusMeters: resolvedShop?.radius ?? null,
-        userLatitude: geoLocationState.latitude,
-        userLongitude: geoLocationState.longitude,
-        locationAccuracyMeters: geoLocationState.accuracy,
-      };
-      await db.ref("scores").push(entry);
-      await trackHiddenAnalytics("scoresEntered",analyticsSessionKeys.scoresEntered,true).catch(()=>{});
-      status.textContent="✅ Saved to Firebase! Score: "+savedScore;
-      quizAns={q1:"",q2:""};
-      setTimeout(()=>startGame(),900);
-    }catch(e){
-      status.textContent="❌ "+e.message;
-      btn.disabled=false; btn.textContent="💾 Try Again";
-    }
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+async function incrementHiddenAnalytics(metric, sessionKey){
+  try{
+    if(sessionKey && sessionStorage.getItem(sessionKey)) return false;
+    if(sessionKey) sessionStorage.setItem(sessionKey,"1");
+    await ensureFirebaseAuthReady();
+    await db.ref(`hiddenAnalytics/${metric}`).transaction(value=>(Number(value)||0)+1);
+    await db.ref("hiddenAnalytics/lastUpdated").set(Date.now());
+    return true;
+  }catch(e){
+    console.warn("⚠️ analytics",e.message);
+    return false;
   }
+}
+
+async function fetchHiddenAnalytics(){
+  const snap=await db.ref("hiddenAnalytics").once("value");
+  const data=snap.val()||{};
+  return {
+    visits:Number(data.visits)||0,
+    playersPlayed:Number(data.playersPlayed)||0,
+    scoresEntered:Number(data.scoresEntered)||0,
+    lastUpdated:Number(data.lastUpdated)||Date.now(),
+  };
+}
+
+async function refreshVisibleAnalytics(){
+  const visitsEl=document.getElementById("publicVisitsCount");
+  const playedEl=document.getElementById("publicPlayedCount");
+  const savedEl=document.getElementById("publicSavedCount");
+  if(!visitsEl || !playedEl || !savedEl) return;
+  try{
+    const data=await fetchHiddenAnalytics();
+    visitsEl.textContent=String(data.visits);
+    playedEl.textContent=String(data.playersPlayed);
+    savedEl.textContent=String(data.scoresEntered);
+  }catch(e){
+    console.warn("⚠️ analytics refresh",e.message);
+  }
+}
+
+const outletDistricts=[""];
+const seedOutletShops=Array.from({length:100},(_,index)=>{
+  const shopNumber=index+1;
+  const row=Math.floor(index/10);
+  return {
+    name:`shop${shopNumber}`,
+    shopCode:`MM${String(shopNumber).padStart(3,"0")}`,
+    latitude:25.6066772 + row*0.0046 + (index%10)*0.00042,
+    longitude:85.0659904 + row*0.0039 + (index%10)*0.00036,
+    radius:50,
+    district:outletDistricts[0],
+  };
+});
+
+let outletShops=[...seedOutletShops];
+
+function normalizeOutletShop(value, fallbackName=""){
   const name=String(value?.name || value?.shopName || fallbackName || "").trim();
   const shopCode=String(value?.shopCode || value?.code || value?.qrCode || fallbackName || name || "").trim();
   const latitude=Number(value?.latitude ?? value?.lat ?? value?.shopLatitude);
