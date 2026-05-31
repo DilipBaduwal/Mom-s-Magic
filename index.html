@@ -836,6 +836,8 @@ function buildScoreExportRows(all){
   return all.map((s,i)=>({
     "Sl.no":i+1,
     "Name":s.name||"",
+    "IP address":s.ipAddress || "",
+    "IP provider":s.ipProvider || "",
     "Lat":s.userLatitude ?? "",
     "long":s.userLongitude ?? "",
     "shop captured status":s.shopName ? "Captured" : "Not captured",
@@ -893,6 +895,82 @@ trackHiddenAnalytics("visits",analyticsSessionKeys.visits,false);
 refreshVisibleAnalytics();
 setInterval(refreshVisibleAnalytics,15000);
 
+let cachedClientIpInfo=null;
+let pendingClientIpPromise=null;
+
+async function fetchJsonWithTimeout(url, timeoutMs=3000){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{cache:"no-store",signal:controller.signal});
+    if(!response.ok) return null;
+    return await response.json();
+  }catch(_e){
+    return null;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+async function getClientIpInfo(){
+  if(cachedClientIpInfo) return cachedClientIpInfo;
+
+  try{
+    const stored=sessionStorage.getItem("momsmagic_client_ip_v1");
+    if(stored){
+      const parsed=JSON.parse(stored);
+      if(parsed && typeof parsed.ipAddress==="string"){
+        cachedClientIpInfo={
+          ipAddress:parsed.ipAddress,
+          ipProvider:parsed.ipProvider || "",
+        };
+        return cachedClientIpInfo;
+      }
+    }
+  }catch(_e){}
+
+  if(pendingClientIpPromise) return pendingClientIpPromise;
+
+  pendingClientIpPromise=(async()=>{
+    const sources=[
+      {
+        provider:"ipify",
+        url:"https://api.ipify.org?format=json",
+        extract:(data)=>data && data.ip,
+      },
+      {
+        provider:"ipapi.co",
+        url:"https://ipapi.co/json/",
+        extract:(data)=>data && data.ip,
+      },
+      {
+        provider:"ipwho.is",
+        url:"https://ipwho.is/",
+        extract:(data)=>data && data.success !== false ? data.ip : "",
+      },
+    ];
+
+    for(const source of sources){
+      const json=await fetchJsonWithTimeout(source.url,3000);
+      const ipAddress=(source.extract(json) || "").toString().trim();
+      if(ipAddress){
+        cachedClientIpInfo={ipAddress,ipProvider:source.provider};
+        try{
+          sessionStorage.setItem("momsmagic_client_ip_v1",JSON.stringify(cachedClientIpInfo));
+        }catch(_e){}
+        return cachedClientIpInfo;
+      }
+    }
+
+    cachedClientIpInfo={ipAddress:"",ipProvider:""};
+    return cachedClientIpInfo;
+  })().finally(()=>{
+    pendingClientIpPromise=null;
+  });
+
+  return pendingClientIpPromise;
+}
+
 // Record a minimal visit row so visitors who do nothing appear in exports
 async function recordVisitIfNeeded(){
   try{
@@ -900,6 +978,7 @@ async function recordVisitIfNeeded(){
     if(sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key,'1');
     await ensureFirebaseAuthReady().catch(()=>{});
+    const ipInfo=await getClientIpInfo().catch(()=>({ipAddress:"",ipProvider:""}));
     const payload = {
       name: 'Unknown',
       timestamp: Date.now(),
@@ -907,6 +986,8 @@ async function recordVisitIfNeeded(){
       referrer: document.referrer || '',
       ua: navigator.userAgent || '',
       path: location.pathname || '',
+      ipAddress: ipInfo.ipAddress || '',
+      ipProvider: ipInfo.ipProvider || '',
     };
     await db.ref('visitLogs').push(payload);
   }catch(e){
@@ -1004,6 +1085,7 @@ async function saveScore(){
   btn.disabled=true; btn.textContent="⏳ Saving…";
   try{
     await ensureFirebaseAuthReady();
+    const ipInfo=await getClientIpInfo().catch(()=>({ipAddress:"",ipProvider:""}));
     const entry={
       name, score:Number(savedScore),
       date:new Date().toLocaleDateString("en-IN"),
@@ -1011,6 +1093,8 @@ async function saveScore(){
       lastHad: quizAns.q1||"",
       favFlavor: quizAns.q2||"",
       phoneNumber,
+      ipAddress: ipInfo.ipAddress || "",
+      ipProvider: ipInfo.ipProvider || "",
       shopName: resolvedShop ? (resolvedShop.name || "") : "",
       shopCode: resolvedShop ? (resolvedShop.shopCode || "") : "",
       entryMode: resolvedShop ? "shop-scan" : "direct-location",
