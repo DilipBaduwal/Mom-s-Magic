@@ -153,6 +153,7 @@
   .admin-auth-sub{font-size:13px;color:var(--text-mid);margin-top:6px;line-height:1.5;}
   .admin-auth-field{width:100%;margin-top:14px;padding:11px 14px;border:2px solid var(--accent);border-radius:14px;background:#fff;font-family:"Nunito",sans-serif;font-size:15px;color:var(--text-dark);}
   .admin-auth-btn{width:100%;margin-top:12px;background:var(--primary);color:#fff;border:none;border-radius:999px;padding:12px 16px;font-family:"Baloo 2",cursive;font-weight:800;font-size:17px;cursor:pointer;}
+  .admin-auth-btn.google{background:#fff;color:var(--primary-dark);border:2px solid var(--accent);}
   /* FAQ */
   #page-faq{padding:20px 16px;max-width:500px;margin:0 auto;}
   .faq-item{background:#fff;border-radius:14px;border:1.5px solid var(--accent);margin-bottom:10px;overflow:hidden;}
@@ -330,10 +331,8 @@
     <div class="admin-auth" id="adminAuthPanel">
       <div class="admin-auth-card">
         <div class="admin-auth-title">Admin Login</div>
-        <div class="admin-auth-sub" id="adminAuthSubtitle">Sign in with the Firebase admin email and password to unlock the QR sheet.</div>
-        <input class="admin-auth-field" id="adminUsernameInput" type="text" placeholder="Admin email" autocomplete="email">
-        <input class="admin-auth-field" id="adminPasswordInput" type="password" placeholder="Admin password" autocomplete="current-password">
-        <button class="admin-auth-btn" type="button" onclick="handleAdminPassword()" id="adminAuthButton">Log in</button>
+        <div class="admin-auth-sub" id="adminAuthSubtitle">Sign in with your Firebase Google account to unlock the QR sheet.</div>
+        <button class="admin-auth-btn google" type="button" onclick="handleAdminGoogleLogin()" id="adminGoogleAuthButton">Continue with Google</button>
         <div class="save-status" id="adminAuthStatus" style="color:var(--primary-dark);margin-top:10px;"></div>
       </div>
     </div>
@@ -380,6 +379,7 @@ firebase.initializeApp({
   measurementId:"G-884C7EPG4M"
 });
 const db=firebase.database(), auth=firebase.auth();
+const googleProvider=new firebase.auth.GoogleAuthProvider();
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
 auth.onAuthStateChanged(user=>{
   adminUnlocked=Boolean(user && !user.isAnonymous);
@@ -606,57 +606,42 @@ function getDefaultQrBaseUrl(){
   return getCanonicalAppUrl();
 }
 
-async function handleAdminPassword(){
-  const usernameInput=document.getElementById("adminUsernameInput");
-  const input=document.getElementById("adminPasswordInput");
+async function handleAdminGoogleLogin(){
   const status=document.getElementById("adminAuthStatus");
-  const button=document.getElementById("adminAuthButton");
+  const button=document.getElementById("adminGoogleAuthButton");
   const subtitle=document.getElementById("adminAuthSubtitle");
-  if(!usernameInput || !input || !status || !button || !subtitle) return;
-  const email=usernameInput.value.trim();
-  const password=input.value.trim();
-  if(!email){
-    status.textContent="Please enter the admin email.";
-    return;
-  }
-  if(!password){
-    status.textContent="Please enter a password.";
-    return;
-  }
+  if(!status || !button || !subtitle) return;
   button.disabled=true;
-  button.textContent="Checking…";
+  button.textContent="Opening Gmail…";
+  status.textContent="";
   try{
     await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
-    await auth.signInWithEmailAndPassword(email,password);
+    await auth.signInWithPopup(googleProvider);
     adminUnlocked=true;
     status.textContent="Admin unlocked.";
-    subtitle.textContent="Signed in with Firebase Auth.";
-    input.value="";
-    usernameInput.value="";
+    subtitle.textContent="Signed in with Gmail.";
   }catch(e){
-    status.textContent=`Login failed: ${e.message}`;
+    status.textContent=`Gmail login failed: ${e.message}`;
   }finally{
     button.disabled=false;
-    button.textContent="Log in";
+    button.textContent="Continue with Gmail";
   }
 }
 
 function renderAdminAccessUi(){
   const authPanel=document.getElementById("adminAuthPanel");
-  const authButton=document.getElementById("adminAuthButton");
   const qrPanel=document.getElementById("qrAdminPanel");
   const restrictedShell=document.getElementById("adminRestricted");
   const subtitle=document.getElementById("adminAuthSubtitle");
-  if(!authPanel || !authButton || !qrPanel || !restrictedShell || !subtitle) return;
+  if(!authPanel || !qrPanel || !restrictedShell || !subtitle) return;
   const isAdmin=Boolean(auth.currentUser && !auth.currentUser.isAnonymous);
   adminUnlocked=isAdmin;
   authPanel.style.display=isAdmin ? "none" : "flex";
   restrictedShell.style.display=isAdmin ? "block" : "none";
   qrPanel.style.display=isAdmin ? "block" : "none";
-  authButton.textContent="Log in";
   subtitle.textContent=isAdmin
     ? `Signed in as ${auth.currentUser.email || "admin"}.`
-    : "Enter the admin email and password to unlock the QR sheet.";
+    : "Sign in with your Firebase Google account to unlock the QR sheet.";
 }
 
 function buildShopQrUrl(shopCode, baseUrl){
