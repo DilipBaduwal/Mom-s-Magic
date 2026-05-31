@@ -170,7 +170,7 @@
 </head>
 <body>
 <nav>
-  <div class="nav-logo">Moms <span>Magic</span><br><small style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);"></small></div>
+  <div class="nav-logo">Moms <span>Magic</span><br><small style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">Cashew &amp; Almond</small></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('game')">🎮 Play</button>
     <button class="nav-tab" onclick="showPage('leaderboard')">🏆 Top 10</button>
@@ -340,6 +340,11 @@
         <div class="page-title">🔐 QR Admin</div>
         <div class="page-sub">Generate, verify, and print the 100 shop QR codes for store handoff.</div>
       </div>
+      <button class="qr-admin-btn secondary"
+        type="button"
+        onclick="downloadAllQRCodes()">
+  ⬇ Download All QRs
+      </button>
       <div class="admin-actions">
         <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
         <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
@@ -373,6 +378,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 firebase.initializeApp({
@@ -717,6 +723,54 @@ function renderQrAdminPanel(){
       qrBox.style.wordBreak="break-all";
     }
   });
+}
+
+async function downloadAllQRCodes() {
+  const zip = new JSZip();
+  const cards = document.querySelectorAll("#qrGrid .qr-card");
+
+  if (!cards.length) {
+    alert("No QR codes found.");
+    return;
+  }
+
+  for (let i = 0; i < cards.length; i++) {
+    const qrContainer = cards[i].querySelector(".qr-code");
+
+    const canvas = qrContainer.querySelector("canvas");
+    const img = qrContainer.querySelector("img");
+
+    let base64Data = null;
+
+    if (canvas) {
+      base64Data = canvas.toDataURL("image/png").split(",")[1];
+    } else if (img) {
+      const response = await fetch(img.src);
+      const blob = await response.blob();
+
+      const reader = new FileReader();
+
+      base64Data = await new Promise(resolve => {
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    if (base64Data) {
+      zip.file(`qr${i + 1}.png`, base64Data, {
+        base64: true
+      });
+    }
+  }
+
+  const content = await zip.generateAsync({
+    type: "blob"
+  });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(content);
+  link.download = "MomsMagic_QR_Codes.zip";
+  link.click();
 }
 
 function distanceMeters(lat1, lon1, lat2, lon2){
