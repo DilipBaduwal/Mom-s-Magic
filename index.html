@@ -961,7 +961,7 @@ function buildLeaderboardRow(value){
     name: value.name || "Anonymous",
     score: Number(value.score) || 0,
     phoneNumber: String(value.phoneNumber || value.personalNumber || "").trim(),
-    entryTimestamp: getScoreEntryTimestamp(value),
+    entryTimestamp: getLeaderboardEntryTimestamp(value),
     timestamp: Number(value.timestamp || 0) || 0,
     date: value.date || "",
     favFlavor: value.favFlavor || "",
