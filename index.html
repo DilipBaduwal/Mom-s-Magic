@@ -382,7 +382,7 @@ const db=firebase.database(), auth=firebase.auth();
 const googleProvider=new firebase.auth.GoogleAuthProvider();
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
 auth.onAuthStateChanged(user=>{
-  adminUnlocked=Boolean(user && !user.isAnonymous);
+  adminUnlocked=Boolean(user && !user.isAnonymous && user.email===allowedAdminEmail);
   renderAdminAccessUi();
   renderQrAdminPanel();
   if(!user){
@@ -524,6 +524,7 @@ let geoLocationPrompted=false;
 
 const qrAdminEnabled=/[?&]admin=1(?:&|$)/.test(location.search)||localStorage.getItem("momsmagic_qr_admin")==="1";
 const qrAppUrlKey="momsmagic_qr_app_url";
+const allowedAdminEmail="341135@fsm.ac.in";
 let adminUnlocked=false;
 
 function normalizeShopCode(value){
@@ -616,7 +617,13 @@ async function handleAdminGoogleLogin(){
   status.textContent="";
   try{
     await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
-    await auth.signInWithPopup(googleProvider);
+    const result=await auth.signInWithPopup(googleProvider);
+    if(result.user.email!==allowedAdminEmail){
+      await auth.signOut();
+      alert("Access Denied");
+      status.textContent="Access denied.";
+      return;
+    }
     adminUnlocked=true;
     status.textContent="Admin unlocked.";
     subtitle.textContent="Signed in with Gmail.";
@@ -624,7 +631,7 @@ async function handleAdminGoogleLogin(){
     status.textContent=`Gmail login failed: ${e.message}`;
   }finally{
     button.disabled=false;
-    button.textContent="Continue with Gmail";
+    button.textContent="Continue with Google";
   }
 }
 
@@ -634,7 +641,7 @@ function renderAdminAccessUi(){
   const restrictedShell=document.getElementById("adminRestricted");
   const subtitle=document.getElementById("adminAuthSubtitle");
   if(!authPanel || !qrPanel || !restrictedShell || !subtitle) return;
-  const isAdmin=Boolean(auth.currentUser && !auth.currentUser.isAnonymous);
+  const isAdmin=Boolean(auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email===allowedAdminEmail);
   adminUnlocked=isAdmin;
   authPanel.style.display=isAdmin ? "none" : "flex";
   restrictedShell.style.display=isAdmin ? "block" : "none";
