@@ -927,6 +927,10 @@ function getLeaderboardEntryTimestamp(value){
   return Number(value?.entryTimestamp || value?.websiteEntryTimestamp || value?.visitedAt || value?.timestamp || 0) || 0;
 }
 
+function getScoreEntryTimestamp(value){
+  return getLeaderboardEntryTimestamp(value);
+}
+
 function getScoreLeaderboardPeriodKey(value){
   if(value?.leaderboardPeriodKey) return String(value.leaderboardPeriodKey);
   return getLeaderboardPeriodKeyFromTimestamp(getLeaderboardEntryTimestamp(value));
