@@ -23,6 +23,8 @@
   .nav-tab.active,.nav-tab:hover{background:rgba(255,255,255,0.2);color:#fff;}
   .page{display:none;min-height:calc(100vh - 56px);}
   .page.active{display:block;}
+  body.admin-mode nav{display:none;}
+  body.admin-mode .page{min-height:100vh;}
   #page-game{background:linear-gradient(180deg,#E8F5E9 0%,var(--cream) 60%);}
   .hero{text-align:center;padding:20px 16px 10px;}
   .hero-title{font-family:"Baloo 2",cursive;font-weight:800;font-size:26px;color:var(--primary-dark);line-height:1.1;}
@@ -59,6 +61,11 @@
   .quiz-opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;}
   .quiz-opt{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:"Nunito",sans-serif;}
   .quiz-opt.selected{background:var(--yellow);color:var(--brown);border-color:var(--yellow);}
+  #page-admin{padding:20px 16px;max-width:1120px;margin:0 auto;}
+  .admin-shell{background:linear-gradient(180deg,rgba(74,124,89,0.1),rgba(74,124,89,0.02));border:2px solid rgba(74,124,89,0.16);border-radius:22px;padding:20px;box-shadow:0 10px 30px rgba(74,124,89,0.08);}
+  .admin-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .admin-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .admin-back{background:var(--primary);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-family:"Baloo 2",cursive;font-weight:800;font-size:15px;cursor:pointer;}
   .qr-admin{display:none;width:100%;margin-top:18px;padding:14px;border:2px solid rgba(255,255,255,0.15);border-radius:18px;background:rgba(255,255,255,0.08);}
   .qr-admin.show{display:block;}
   .qr-admin-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
@@ -78,8 +85,10 @@
   .qr-link{font-size:8px;color:rgba(0,0,0,0.55);margin-top:6px;line-height:1.25;word-break:break-all;}
   @media print{
     nav,.hero,.game-hud,.page-title,.page-sub,.live-badge,.refresh-btn,footer,.qr-admin-actions,.faq-item,.product-card,.why-section{display:none !important;}
-    .page{display:block !important;min-height:auto !important;}
-    #page-game{background:#fff !important;}
+    .page{display:none !important;min-height:auto !important;}
+    .page.active{display:block !important;}
+    #page-admin{padding:0 !important;max-width:none !important;}
+    .admin-shell{border:none;box-shadow:none;background:#fff;padding:0;}
     .game-wrap,.overlay,.overlay.show,#gameOverOverlay{display:none !important;}
     .qr-admin{display:block !important;border:none;background:#fff;margin-top:0;padding:0;}
     .qr-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
@@ -231,20 +240,6 @@
   <div style="text-align:center;font-size:12px;color:var(--text-mid);padding:10px 0 20px;">
     👆 Drag on canvas or use ← → arrow keys
   </div>
-  <div class="qr-admin" id="qrAdminPanel">
-    <div class="qr-admin-head">
-      <div>
-        <div class="qr-admin-title">50 Shop QR Codes</div>
-        <div class="qr-admin-sub">Open this page with <strong>?admin=1</strong> to print the QR set. Each QR opens the game page with the shop code prefilled so you can hand them to the shops instead of using geotagging.</div>
-        <input class="qr-admin-field" id="qrBaseUrl" type="url" placeholder="Paste the public app URL here before printing">
-      </div>
-      <div class="qr-admin-actions">
-        <button class="qr-admin-btn" type="button" onclick="renderQrAdminPanel()">↻ Refresh</button>
-        <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
-      </div>
-    </div>
-    <div class="qr-grid" id="qrGrid"></div>
-  </div>
 </div>
 
 <!-- LEADERBOARD PAGE -->
@@ -315,6 +310,33 @@
     <div class="page-sub" style="margin-bottom:20px;">Everything you want to know about Moms Magic</div>
     <div id="faqList"></div>
     <footer>Made with ❤️ by <strong>Moms Magic Biscuits</strong> · Bihar, India</footer>
+  </div>
+</div>
+
+<!-- ADMIN PAGE -->
+<div id="page-admin" class="page">
+  <div class="admin-shell">
+    <div class="admin-hero">
+      <div>
+        <div class="page-title">🔐 QR Admin</div>
+        <div class="page-sub">Generate, verify, and print the 50 shop QR codes for store handoff.</div>
+      </div>
+      <div class="admin-actions">
+        <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
+        <button class="qr-admin-btn" type="button" onclick="renderQrAdminPanel()">↻ Refresh</button>
+        <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
+      </div>
+    </div>
+    <div class="qr-admin" id="qrAdminPanel">
+      <div class="qr-admin-head">
+        <div>
+          <div class="qr-admin-title">50 Shop QR Codes</div>
+          <div class="qr-admin-sub">Open the admin page with <strong>?admin=1</strong> to print the QR set. Each QR opens the game page with the shop code prefilled so you can hand them to the shops instead of using geotagging.</div>
+          <input class="qr-admin-field" id="qrBaseUrl" type="url" placeholder="Paste the public app URL here before printing">
+        </div>
+      </div>
+      <div class="qr-grid" id="qrGrid"></div>
+    </div>
   </div>
 </div>
 
@@ -887,8 +909,20 @@ function showPage(name){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
   document.getElementById("page-"+name).classList.add("active");
+  document.body.classList.toggle("admin-mode", name==="admin");
   ["game","leaderboard","product","faq"].forEach((n,i)=>{if(n===name)document.querySelectorAll(".nav-tab")[i].classList.add("active");});
   if(name==="leaderboard"){initLeaderboard();renderLeaderboard();}
+}
+
+function exitAdminMode(){
+  try{
+    const url=new URL(location.href);
+    url.searchParams.delete("admin");
+    localStorage.removeItem("momsmagic_qr_admin");
+    window.location.href=url.toString();
+  }catch(e){
+    window.location.href=location.pathname;
+  }
 }
 
 // ── FAQ ───────────────────────────────────────────────────────────────────────
@@ -1121,6 +1155,12 @@ canvas.addEventListener("touchend",()=>touchStartX=null);
 // Init
 listenForOutletData();
 window.addEventListener("load",()=>{
+  if(qrAdminEnabled){
+    document.body.classList.add("admin-mode");
+    showPage("admin");
+  }else{
+    showPage("game");
+  }
   applyShopCodeFromUrl();
   renderQrAdminPanel();
 });
