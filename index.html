@@ -374,6 +374,7 @@ firebase.initializeApp({
 });
 const db=firebase.database(), auth=firebase.auth();
 const googleProvider=new firebase.auth.GoogleAuthProvider();
+let authReadyPromise=null;
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
 auth.onAuthStateChanged(user=>{
   adminUnlocked=Boolean(user && !user.isAnonymous && user.email===allowedAdminEmail);
@@ -383,7 +384,25 @@ auth.onAuthStateChanged(user=>{
     auth.signInAnonymously().catch(e=>console.warn("⚠️",e.message));
   }
 });
-auth.signInAnonymously().then(()=>console.log("✅ Auth OK")).catch(e=>console.warn("⚠️",e.message));
+async function ensureFirebaseAuthReady(){
+  if(auth.currentUser) return auth.currentUser;
+  if(!authReadyPromise){
+    authReadyPromise=new Promise((resolve,reject)=>{
+      const unsubscribe=auth.onAuthStateChanged(user=>{
+        if(user){
+          unsubscribe();
+          resolve(user);
+        }
+      },reject);
+      auth.signInAnonymously().catch(reject);
+    }).catch(e=>{
+      authReadyPromise=null;
+      throw e;
+    });
+  }
+  return authReadyPromise;
+}
+ensureFirebaseAuthReady().then(()=>console.log("✅ Auth OK")).catch(e=>console.warn("⚠️",e.message));
 
 // ── HIDDEN ANALYTICS ─────────────────────────────────────────────────────────
 const analyticsSessionKeys={
@@ -411,7 +430,7 @@ async function incrementHiddenAnalytics(metric, sessionKey){
   try{
     if(sessionKey && sessionStorage.getItem(sessionKey)) return false;
     if(sessionKey) sessionStorage.setItem(sessionKey,"1");
-    if(!auth.currentUser) await auth.signInAnonymously();
+    await ensureFirebaseAuthReady();
     await db.ref(`hiddenAnalytics/${metric}`).transaction(value=>(Number(value)||0)+1);
     await db.ref("hiddenAnalytics/lastUpdated").set(Date.now());
     return true;
@@ -874,7 +893,7 @@ async function recordVisitIfNeeded(){
     const key = 'momsmagic_visit_logged_v1';
     if(sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key,'1');
-    if(!auth.currentUser) await auth.signInAnonymously().catch(()=>{});
+    await ensureFirebaseAuthReady().catch(()=>{});
     const payload = {
       name: 'Unknown',
       timestamp: Date.now(),
@@ -978,7 +997,7 @@ async function saveScore(){
   }
   btn.disabled=true; btn.textContent="⏳ Saving…";
   try{
-    if(!auth.currentUser) await auth.signInAnonymously();
+    await ensureFirebaseAuthReady();
     const entry={
       name, score:Number(savedScore),
       date:new Date().toLocaleDateString("en-IN"),
@@ -998,7 +1017,7 @@ async function saveScore(){
       locationAccuracyMeters: geoLocationState.accuracy,
     };
     await db.ref("scores").push(entry);
-    await trackHiddenAnalytics("scoresEntered",analyticsSessionKeys.scoresEntered,true);
+    await trackHiddenAnalytics("scoresEntered",analyticsSessionKeys.scoresEntered,true).catch(()=>{});
     status.textContent="✅ Saved to Firebase! Score: "+savedScore;
     quizAns={q1:"",q2:""};
     setTimeout(()=>startGame(),900);
