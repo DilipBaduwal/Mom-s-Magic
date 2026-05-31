@@ -895,7 +895,7 @@ trackHiddenAnalytics("visits",analyticsSessionKeys.visits,false);
 refreshVisibleAnalytics();
 setInterval(refreshVisibleAnalytics,15000);
 
-const LEADERBOARD_CUTOFF_HOUR=20;
+const LEADERBOARD_CUTOFF_TIME={hours:23,minutes:59,seconds:59,milliseconds:999};
 let leaderboardFinalizationPromise=null;
 let leaderboardAutoRefreshStarted=false;
 
@@ -919,7 +919,9 @@ function normalizePhoneKey(phoneNumber){
 
 function getLeaderboardPeriodKeyFromTimestamp(timestamp){
   const date=new Date(Number(timestamp) || Date.now());
-  if(date.getHours()>=LEADERBOARD_CUTOFF_HOUR) return getLocalDateKey(addLocalDays(date,1));
+  const cutoff=new Date(date);
+  cutoff.setHours(LEADERBOARD_CUTOFF_TIME.hours,LEADERBOARD_CUTOFF_TIME.minutes,LEADERBOARD_CUTOFF_TIME.seconds,LEADERBOARD_CUTOFF_TIME.milliseconds);
+  if(date>cutoff) return getLocalDateKey(addLocalDays(date,1));
   return getLocalDateKey(date);
 }
 
