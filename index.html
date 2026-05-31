@@ -563,6 +563,11 @@ function applyShopSelection(shop, sourceLabel="QR code"){
     accuracy:null,
     matchedShop:shop,
   };
+  try{
+    updateDetectedShopUi("Shop scan detected.", shop);
+    const overlay=document.getElementById("locationOverlay");
+    if(overlay) overlay.classList.remove("show");
+  }catch(e){/* ignore */}
 }
 
 function getCanonicalAppUrl(){
@@ -1008,7 +1013,6 @@ async function saveScore(){
       phoneNumber,
       shopName: resolvedShop ? (resolvedShop.name || "") : "",
       shopCode: resolvedShop ? (resolvedShop.shopCode || "") : "",
-      district: "Patna",
       entryMode: resolvedShop ? "shop-scan" : "direct-location",
       capturedViaLocation: !resolvedShop,
       shopLatitude: resolvedShop?.latitude ?? null,
