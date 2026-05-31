@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Moms Magic Cashew &amp; Almond</title>
+<title>Moms Magic</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -185,10 +185,7 @@
   <div class="hero">
     <div class="hero-title">Catch the <span>Biscuits!</span></div>
     <div class="hero-sub">Catch Moms Magic packs · Score by price · Avoid bad items!</div>
-      <div id="winnersBanner" style="margin-top:12px;display:flex;justify-content:center;gap:8px;align-items:center;">
-        <div style="background:linear-gradient(90deg,#fff8ea,#fff);padding:8px 12px;border-radius:12px;border:1px solid var(--accent-light);font-weight:700">🥇 Yesterday's winners</div>
-        <button class="nav-tab" style="padding:6px 10px;border-radius:10px" onclick="showPage('winners')">See winners</button>
-      </div>
+    
   </div>
   
   <div class="game-hud">
@@ -1142,8 +1139,10 @@ async function loadPreviousDayWinners(){
     const note=`Rewards will be sent by 5pm today.`;
     const list=bestByPhone.map((w,i)=>{
       const name=escapeHtml(w.name||'Anonymous');
+      const shop=escapeHtml(w.shopName||'');
+      const shopHtml=shop?`<div style="font-size:12px;color:var(--text-mid)">${shop}</div>`:'';
       const score=Number(w.score||0);
-      return `<div style="padding:10px 12px;border-bottom:1px solid var(--accent-light);display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:800">#${i+1} ${name}</div><div style="font-size:12px;color:var(--text-mid)">Phone: ${w.phoneNumber||'—'}</div></div><div style="font-weight:900;font-size:20px">${score}</div></div>`;
+      return `<div style="padding:10px 12px;border-bottom:1px solid var(--accent-light);display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:800">#${i+1} ${name}</div>${shopHtml}</div><div style="font-weight:900;font-size:20px">${score}</div></div>`;
     }).join('');
 
     container.innerHTML=`<div style="padding:10px 12px"><div style="font-weight:800;font-size:16px;margin-bottom:6px">${title}</div><div style="font-size:13px;color:var(--text-mid);margin-bottom:10px">${note}</div>${list}</div>`;
