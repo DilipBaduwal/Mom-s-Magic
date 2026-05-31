@@ -63,6 +63,7 @@
   .quiz-opt.selected{background:var(--yellow);color:var(--brown);border-color:var(--yellow);}
   #page-admin{padding:20px 16px;max-width:1120px;margin:0 auto;}
   .admin-shell{background:linear-gradient(180deg,rgba(74,124,89,0.1),rgba(74,124,89,0.02));border:2px solid rgba(74,124,89,0.16);border-radius:22px;padding:20px;box-shadow:0 10px 30px rgba(74,124,89,0.08);}
+  .admin-shell.locked{padding:0;box-shadow:none;border:none;background:transparent;}
   .admin-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
   .admin-actions{display:flex;gap:8px;flex-wrap:wrap;}
   .admin-back{background:var(--primary);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-family:"Baloo 2",cursive;font-weight:800;font-size:15px;cursor:pointer;}
@@ -146,6 +147,12 @@
   .why-icon{font-size:24px;flex-shrink:0;}
   .why-text-title{font-weight:700;font-size:14px;color:var(--text-dark);}
   .why-text-sub{font-size:13px;color:var(--text-mid);margin-top:2px;}
+  .admin-auth{display:flex;align-items:center;justify-content:center;min-height:55vh;padding:12px 0 6px;}
+  .admin-auth-card{width:min(100%,420px);background:#fff;border:2px solid rgba(74,124,89,0.18);border-radius:22px;padding:22px;box-shadow:0 12px 34px rgba(74,124,89,0.12);}
+  .admin-auth-title{font-family:"Baloo 2",cursive;font-size:28px;font-weight:800;color:var(--primary-dark);line-height:1.05;}
+  .admin-auth-sub{font-size:13px;color:var(--text-mid);margin-top:6px;line-height:1.5;}
+  .admin-auth-field{width:100%;margin-top:14px;padding:11px 14px;border:2px solid var(--accent);border-radius:14px;background:#fff;font-family:"Nunito",sans-serif;font-size:15px;color:var(--text-dark);}
+  .admin-auth-btn{width:100%;margin-top:12px;background:var(--primary);color:#fff;border:none;border-radius:999px;padding:12px 16px;font-family:"Baloo 2",cursive;font-weight:800;font-size:17px;cursor:pointer;}
   /* FAQ */
   #page-faq{padding:20px 16px;max-width:500px;margin:0 auto;}
   .faq-item{background:#fff;border-radius:14px;border:1.5px solid var(--accent);margin-bottom:10px;overflow:hidden;}
@@ -222,14 +229,8 @@
       <div class="name-form">
         <div class="overlay-sub">Enter your name for leaderboard</div>
         <input class="name-input" id="playerName" type="text" placeholder="Your name" maxlength="20">
-        <input class="name-input" id="detectedShopName" type="text" inputmode="text" autocomplete="off" placeholder="Scan QR or enter personal number" style="margin-top:4px;background:#f5f7fb;">
+        <input class="name-input" id="detectedShopName" type="text" inputmode="text" autocomplete="off" placeholder="Scan QR or enter shop code" style="margin-top:4px;background:#f5f7fb;">
         <button class="overlay-btn" type="button" onclick="resolveShopCodeFromInput()" style="width:100%;margin-top:6px;background:#8fb06d;">🔎 Check shop code</button>
-        <select class="name-input" id="playerDistrict" disabled style="margin-top:4px;">
-          <option value="">Select district</option>
-          <option value="shop1">shop1</option>
-          <option>Bhagalpur</option><option>Patna</option><option>Muzaffarpur</option>
-          <option>Gaya</option><option>Darbhanga</option><option>Purnia</option>
-        </select>
         <input class="name-input" id="purchasedQuantity" type="number" placeholder="Purchased quantity" min="0" step="1" style="margin-top:4px;">
         <div class="save-status" id="geoStatus" style="margin-top:6px;"></div>
         <div class="save-status" id="saveStatus"></div>
@@ -297,7 +298,7 @@
       <div class="why-item"><div class="why-icon">🏭</div><div><div class="why-text-title">Made in Bihar, for Bihar</div><div class="why-text-sub">Local production means fresher biscuits at better prices.</div></div></div>
       <div class="why-item"><div class="why-icon">✅</div><div><div class="why-text-title">FSSAI Certified</div><div class="why-text-sub">Every batch tested for quality. Safe for your family.</div></div></div>
       <div class="why-item"><div class="why-icon">💰</div><div><div class="why-text-title">Affordable Pricing</div><div class="why-text-sub">₹5, ₹10 and ₹35 packs — value for every rupee.</div></div></div>
-      <div class="why-item"><div class="why-icon">🛒</div><div><div class="why-text-title">Available Everywhere</div><div class="why-text-sub">Find us at your local kirana store across 6 districts of Bihar.</div></div></div>
+      <div class="why-item"><div class="why-icon">🛒</div><div><div class="why-text-title">Available Everywhere</div><div class="why-text-sub">Find us at your local kirana store across Bihar.</div></div></div>
     </div>
     <footer>Made with ❤️ by <strong>Moms Magic Biscuits</strong> · Bihar, India</footer>
   </div>
@@ -323,19 +324,40 @@
       </div>
       <div class="admin-actions">
         <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
-        <button class="qr-admin-btn" type="button" onclick="renderQrAdminPanel()">↻ Refresh</button>
         <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
       </div>
     </div>
-    <div class="qr-admin" id="qrAdminPanel">
-      <div class="qr-admin-head">
+    <div class="admin-auth" id="adminAuthPanel">
+      <div class="admin-auth-card">
+        <div class="admin-auth-title">Admin Login</div>
+        <div class="admin-auth-sub" id="adminAuthSubtitle">Sign in with the Firebase admin email and password to unlock the QR sheet.</div>
+        <input class="admin-auth-field" id="adminUsernameInput" type="text" placeholder="Admin email" autocomplete="email">
+        <input class="admin-auth-field" id="adminPasswordInput" type="password" placeholder="Admin password" autocomplete="current-password">
+        <button class="admin-auth-btn" type="button" onclick="handleAdminPassword()" id="adminAuthButton">Log in</button>
+        <div class="save-status" id="adminAuthStatus" style="color:var(--primary-dark);margin-top:10px;"></div>
+      </div>
+    </div>
+    <div id="adminRestricted" class="admin-shell locked" style="display:none;">
+      <div class="admin-hero">
         <div>
-          <div class="qr-admin-title">50 Shop QR Codes</div>
-          <div class="qr-admin-sub">Open the admin page with <strong>?admin=1</strong> to print the QR set. Each QR opens the game page with the shop code prefilled so you can hand them to the shops instead of using geotagging.</div>
-          <input class="qr-admin-field" id="qrBaseUrl" type="url" placeholder="Paste the public app URL here before printing">
+          <div class="page-title">🔐 QR Admin</div>
+          <div class="page-sub">Generate, verify, and print the 50 shop QR codes for store handoff.</div>
+        </div>
+        <div class="admin-actions">
+          <button class="admin-back" type="button" onclick="exitAdminMode()">← Back to Game</button>
+          <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
         </div>
       </div>
-      <div class="qr-grid" id="qrGrid"></div>
+      <div class="qr-admin" id="qrAdminPanel">
+        <div class="qr-admin-head">
+          <div>
+            <div class="qr-admin-title">50 Shop QR Codes</div>
+            <div class="qr-admin-sub">Open the admin page with <strong>?admin=1</strong> to print the QR set. Each QR opens the game page with the shop code prefilled so you can hand them to the shops instead of using geotagging.</div>
+            <input class="qr-admin-field" id="qrBaseUrl" type="url" placeholder="Paste the public app URL here before printing">
+          </div>
+        </div>
+        <div class="qr-grid" id="qrGrid"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -358,6 +380,15 @@ firebase.initializeApp({
   measurementId:"G-884C7EPG4M"
 });
 const db=firebase.database(), auth=firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
+auth.onAuthStateChanged(user=>{
+  adminUnlocked=Boolean(user && !user.isAnonymous);
+  renderAdminAccessUi();
+  renderQrAdminPanel();
+  if(!user){
+    auth.signInAnonymously().catch(e=>console.warn("⚠️",e.message));
+  }
+});
 auth.signInAnonymously().then(()=>console.log("✅ Auth OK")).catch(e=>console.warn("⚠️",e.message));
 
 // ── HIDDEN ANALYTICS ─────────────────────────────────────────────────────────
@@ -422,7 +453,7 @@ async function refreshVisibleAnalytics(){
   }
 }
 
-const outletDistricts=["Patna","Bhagalpur","Muzaffarpur","Gaya","Darbhanga","Purnia"];
+const outletDistricts=[""];
 const seedOutletShops=Array.from({length:50},(_,index)=>{
   const shopNumber=index+1;
   const row=Math.floor(index/10);
@@ -432,7 +463,7 @@ const seedOutletShops=Array.from({length:50},(_,index)=>{
     latitude:25.6066772 + row*0.0046 + (index%10)*0.00042,
     longitude:85.0659904 + row*0.0039 + (index%10)*0.00036,
     radius:50,
-    district:outletDistricts[index % outletDistricts.length],
+    district:outletDistricts[0],
   };
 });
 
@@ -493,6 +524,7 @@ let geoLocationPrompted=false;
 
 const qrAdminEnabled=/[?&]admin=1(?:&|$)/.test(location.search)||localStorage.getItem("momsmagic_qr_admin")==="1";
 const qrAppUrlKey="momsmagic_qr_app_url";
+let adminUnlocked=false;
 
 function normalizeShopCode(value){
   return String(value || "").trim().toUpperCase();
@@ -574,6 +606,59 @@ function getDefaultQrBaseUrl(){
   return getCanonicalAppUrl();
 }
 
+async function handleAdminPassword(){
+  const usernameInput=document.getElementById("adminUsernameInput");
+  const input=document.getElementById("adminPasswordInput");
+  const status=document.getElementById("adminAuthStatus");
+  const button=document.getElementById("adminAuthButton");
+  const subtitle=document.getElementById("adminAuthSubtitle");
+  if(!usernameInput || !input || !status || !button || !subtitle) return;
+  const email=usernameInput.value.trim();
+  const password=input.value.trim();
+  if(!email){
+    status.textContent="Please enter the admin email.";
+    return;
+  }
+  if(!password){
+    status.textContent="Please enter a password.";
+    return;
+  }
+  button.disabled=true;
+  button.textContent="Checking…";
+  try{
+    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});
+    await auth.signInWithEmailAndPassword(email,password);
+    adminUnlocked=true;
+    status.textContent="Admin unlocked.";
+    subtitle.textContent="Signed in with Firebase Auth.";
+    input.value="";
+    usernameInput.value="";
+  }catch(e){
+    status.textContent=`Login failed: ${e.message}`;
+  }finally{
+    button.disabled=false;
+    button.textContent="Log in";
+  }
+}
+
+function renderAdminAccessUi(){
+  const authPanel=document.getElementById("adminAuthPanel");
+  const authButton=document.getElementById("adminAuthButton");
+  const qrPanel=document.getElementById("qrAdminPanel");
+  const restrictedShell=document.getElementById("adminRestricted");
+  const subtitle=document.getElementById("adminAuthSubtitle");
+  if(!authPanel || !authButton || !qrPanel || !restrictedShell || !subtitle) return;
+  const isAdmin=Boolean(auth.currentUser && !auth.currentUser.isAnonymous);
+  adminUnlocked=isAdmin;
+  authPanel.style.display=isAdmin ? "none" : "flex";
+  restrictedShell.style.display=isAdmin ? "block" : "none";
+  qrPanel.style.display=isAdmin ? "block" : "none";
+  authButton.textContent="Log in";
+  subtitle.textContent=isAdmin
+    ? `Signed in as ${auth.currentUser.email || "admin"}.`
+    : "Enter the admin email and password to unlock the QR sheet.";
+}
+
 function buildShopQrUrl(shopCode, baseUrl){
   const cleanedBase=String(baseUrl || "").trim();
   if(!cleanedBase) return "";
@@ -587,8 +672,8 @@ function renderQrAdminPanel(){
   const panel=document.getElementById("qrAdminPanel");
   const grid=document.getElementById("qrGrid");
   const baseInput=document.getElementById("qrBaseUrl");
-  if(!panel || !grid || !baseInput) return;
-  if(qrAdminEnabled) panel.classList.add("show"); else { panel.classList.remove("show"); return; }
+  if(!panel || !grid || !baseInput || !adminUnlocked) return;
+  panel.classList.add("show");
   if(!baseInput.value.trim()) baseInput.value=getDefaultQrBaseUrl() || localStorage.getItem(qrAppUrlKey) || "";
   const baseUrl=baseInput.value.trim();
   if(baseUrl) localStorage.setItem(qrAppUrlKey, baseUrl);
@@ -612,10 +697,6 @@ function renderQrAdminPanel(){
     meta.className="qr-card-code";
     meta.textContent=shop.shopCode || shop.name;
     card.appendChild(meta);
-    const district=document.createElement("div");
-    district.className="qr-card-district";
-    district.textContent=shop.district || "Bihar";
-    card.appendChild(district);
     const link=document.createElement("div");
     link.className="qr-link";
     link.textContent=qrUrl;
@@ -661,12 +742,6 @@ function updateDetectedShopUi(message, shop){
     }
   }
   if(statusEl) statusEl.textContent=message || "";
-
-  const districtSelect=document.getElementById("playerDistrict");
-  if(districtSelect){
-    districtSelect.disabled=true;
-    districtSelect.value=shop ? (shop.district || shop.name || "") : "";
-  }
 }
 
 function matchOutletShop(latitude, longitude, accuracy){
@@ -738,7 +813,6 @@ function buildScoreExportRows(all){
     "Survey question1 response":s.lastHad || "",
     "Survey question2 response":s.favFlavor || "",
     "purchased quantity":s.purchaseQuantity ?? "",
-    "district":s.district || "",
     "shop latitude":s.shopLatitude ?? "",
     "shop longitude":s.shopLongitude ?? "",
     "shop radius meters":s.shopRadiusMeters ?? "",
@@ -824,7 +898,7 @@ function buildLbHtml(all){
       <div class="lb-rank" style="color:${i<3?"var(--primary)":"var(--text-mid)"}">${i+1}</div>
       <div style="flex:1">
         <div class="lb-name">${s.name||"Anonymous"}</div>
-        <div class="lb-district">${s.district||"Bihar"} · ${s.date||""}</div>
+        <div class="lb-district">${s.date||""}</div>
         ${s.favFlavor?`<div style="font-size:10px;color:var(--primary);margin-top:2px;">❤️ ${s.favFlavor}</div>`:""}
       </div>
       <div class="lb-score">${Number(s.score)}</div>
@@ -867,7 +941,6 @@ function selectQ(qNum, val){
 let savedScore=0;
 async function saveScore(){
   const name=document.getElementById("playerName").value.trim()||"Anonymous";
-  const district=document.getElementById("playerDistrict").value||"Bihar";
   const detectedShop=document.getElementById("detectedShopName").value.trim();
   const resolvedShop=geoLocationState.matchedShop || findOutletByCode(detectedShop);
   const purchasedQuantity=Number(document.getElementById("purchasedQuantity").value||0);
@@ -877,7 +950,7 @@ async function saveScore(){
   try{
     if(!auth.currentUser) await auth.signInAnonymously();
     const entry={
-      name, district, score:Number(savedScore),
+      name, score:Number(savedScore),
       date:new Date().toLocaleDateString("en-IN"),
       timestamp:Date.now(),
       lastHad: quizAns.q1||"",
@@ -919,6 +992,8 @@ function exitAdminMode(){
     const url=new URL(location.href);
     url.searchParams.delete("admin");
     localStorage.removeItem("momsmagic_qr_admin");
+    adminUnlocked=false;
+    auth.signOut().catch(()=>{});
     window.location.href=url.toString();
   }catch(e){
     window.location.href=location.pathname;
@@ -927,7 +1002,7 @@ function exitAdminMode(){
 
 // ── FAQ ───────────────────────────────────────────────────────────────────────
 const faqs=[
-  {q:"Where can I buy Moms Magic biscuits?",a:"Available at kirana stores, grocery shops, and supermarkets across Bhagalpur, Patna, Muzaffarpur, Gaya, Darbhanga, and Purnia districts of Bihar."},
+  {q:"Where can I buy Moms Magic biscuits?",a:"Available at kirana stores, grocery shops, and supermarkets across Bihar."},
   {q:"What price packs are available?",a:"All three flavours — Cashew & Almond, Fruit & Milk, and Royal Butter — come in ₹5, ₹10, and ₹35 packs so there is a size for every occasion and budget."},
   {q:"Are Moms Magic biscuits safe for children?",a:"Yes! All Moms Magic biscuits are FSSAI certified and manufactured under strict hygiene conditions."},
   {q:"What varieties are available?",a:"We offer Cashew & Almond, Fruit & Milk, and Royal Butter. New varieties are added regularly!"},
@@ -1162,6 +1237,7 @@ window.addEventListener("load",()=>{
     showPage("game");
   }
   applyShopCodeFromUrl();
+  renderAdminAccessUi();
   renderQrAdminPanel();
 });
 drawBackground(); drawBasket(); initLeaderboard();
