@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Moms Magic Cashew &amp; Almond</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --primary:#4A7C59;--primary-dark:#2F5C3A;--primary-light:#6FAB80;
@@ -58,6 +59,32 @@
   .quiz-opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;}
   .quiz-opt{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:"Nunito",sans-serif;}
   .quiz-opt.selected{background:var(--yellow);color:var(--brown);border-color:var(--yellow);}
+  .qr-admin{display:none;width:100%;margin-top:18px;padding:14px;border:2px solid rgba(255,255,255,0.15);border-radius:18px;background:rgba(255,255,255,0.08);}
+  .qr-admin.show{display:block;}
+  .qr-admin-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .qr-admin-title{font-family:"Baloo 2",cursive;font-size:22px;font-weight:800;color:var(--yellow);}
+  .qr-admin-sub{font-size:13px;color:rgba(255,255,255,0.85);margin-top:2px;max-width:520px;}
+  .qr-admin-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .qr-admin-btn{background:#fff;color:var(--primary-dark);border:none;border-radius:999px;padding:10px 16px;font-family:"Baloo 2",cursive;font-weight:800;font-size:15px;cursor:pointer;}
+  .qr-admin-btn.secondary{background:var(--yellow);color:var(--brown);}
+  .qr-admin-field{width:100%;margin-top:12px;padding:10px 14px;border:2px solid rgba(255,255,255,0.18);border-radius:14px;background:rgba(255,255,255,0.95);font-family:"Nunito",sans-serif;font-size:14px;color:var(--text-dark);}
+  .qr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;}
+  .qr-card{background:#fff;border-radius:14px;padding:10px;border:2px solid rgba(74,124,89,0.14);text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.08);}
+  .qr-code{width:112px;height:112px;margin:0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .qr-card img{width:100%;height:auto;display:block;border-radius:10px;}
+  .qr-card-name{font-family:"Baloo 2",cursive;font-size:15px;font-weight:800;color:var(--primary-dark);margin-top:8px;line-height:1.1;}
+  .qr-card-code{font-size:11px;font-weight:700;color:var(--primary);margin-top:2px;}
+  .qr-card-district{font-size:10px;color:var(--text-mid);margin-top:1px;}
+  .qr-link{font-size:8px;color:rgba(0,0,0,0.55);margin-top:6px;line-height:1.25;word-break:break-all;}
+  @media print{
+    nav,.hero,.game-hud,.page-title,.page-sub,.live-badge,.refresh-btn,footer,.qr-admin-actions,.faq-item,.product-card,.why-section{display:none !important;}
+    .page{display:block !important;min-height:auto !important;}
+    #page-game{background:#fff !important;}
+    .game-wrap,.overlay,.overlay.show,#gameOverOverlay{display:none !important;}
+    .qr-admin{display:block !important;border:none;background:#fff;margin-top:0;padding:0;}
+    .qr-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+    .qr-card{break-inside:avoid;box-shadow:none;border:1px solid #ccc;}
+  }
   @media (max-width: 480px){
     .overlay{padding-top:12px;padding-bottom:12px;}
     #gameOverOverlay{padding:14px 12px 18px;}
@@ -186,8 +213,8 @@
       <div class="name-form">
         <div class="overlay-sub">Enter your name for leaderboard</div>
         <input class="name-input" id="playerName" type="text" placeholder="Your name" maxlength="20">
-        <input class="name-input" id="detectedShopName" type="text" inputmode="tel" autocomplete="tel" placeholder="Detecting shop location..." readonly style="margin-top:4px;background:#f5f7fb;">
-        <button class="overlay-btn" type="button" onclick="captureOutletLocation(true)" style="width:100%;margin-top:6px;background:#8fb06d;">📍 Retry location</button>
+        <input class="name-input" id="detectedShopName" type="text" inputmode="text" autocomplete="off" placeholder="Scan QR or enter personal number" style="margin-top:4px;background:#f5f7fb;">
+        <button class="overlay-btn" type="button" onclick="resolveShopCodeFromInput()" style="width:100%;margin-top:6px;background:#8fb06d;">🔎 Check shop code</button>
         <select class="name-input" id="playerDistrict" disabled style="margin-top:4px;">
           <option value="">Select district</option>
           <option value="shop1">shop1</option>
@@ -203,6 +230,20 @@
   </div>
   <div style="text-align:center;font-size:12px;color:var(--text-mid);padding:10px 0 20px;">
     👆 Drag on canvas or use ← → arrow keys
+  </div>
+  <div class="qr-admin" id="qrAdminPanel">
+    <div class="qr-admin-head">
+      <div>
+        <div class="qr-admin-title">50 Shop QR Codes</div>
+        <div class="qr-admin-sub">Open this page with <strong>?admin=1</strong> to print the QR set. Each QR opens the game page with the shop code prefilled so you can hand them to the shops instead of using geotagging.</div>
+        <input class="qr-admin-field" id="qrBaseUrl" type="url" placeholder="Paste the public app URL here before printing">
+      </div>
+      <div class="qr-admin-actions">
+        <button class="qr-admin-btn" type="button" onclick="renderQrAdminPanel()">↻ Refresh</button>
+        <button class="qr-admin-btn secondary" type="button" onclick="window.print()">🖨 Print / Save PDF</button>
+      </div>
+    </div>
+    <div class="qr-grid" id="qrGrid"></div>
   </div>
 </div>
 
@@ -359,49 +400,31 @@ async function refreshVisibleAnalytics(){
   }
 }
 
-const seedOutletShops=[
-  {name:"shop1", latitude:25.6066772, longitude:85.0659904, radius:50, district:"Patna"},
-  {name:"shop2", latitude:25.6071772, longitude:85.0663904, radius:50, district:"Patna"},
-  {name:"shop3", latitude:25.6076772, longitude:85.0667904, radius:50, district:"Patna"},
-  {name:"shop4", latitude:25.6081772, longitude:85.0671904, radius:50, district:"Patna"},
-  {name:"shop5", latitude:25.6086772, longitude:85.0675904, radius:50, district:"Patna"},
-  {name:"shop6", latitude:25.6091772, longitude:85.0679904, radius:50, district:"Patna"},
-  {name:"shop7", latitude:25.6096772, longitude:85.0683904, radius:50, district:"Patna"},
-  {name:"shop8", latitude:25.6101772, longitude:85.0687904, radius:50, district:"Patna"},
-  {name:"shop9", latitude:25.6106772, longitude:85.0691904, radius:50, district:"Patna"},
-  {name:"shop10", latitude:25.6111772, longitude:85.0695904, radius:50, district:"Patna"},
-  {name:"shop11", latitude:25.6116772, longitude:85.0699904, radius:50, district:"Patna"},
-  {name:"shop12", latitude:25.6121772, longitude:85.0703904, radius:50, district:"Patna"},
-  {name:"shop13", latitude:25.6126772, longitude:85.0707904, radius:50, district:"Patna"},
-  {name:"shop14", latitude:25.6131772, longitude:85.0711904, radius:50, district:"Patna"},
-  {name:"shop15", latitude:25.6136772, longitude:85.0715904, radius:50, district:"Patna"},
-  {name:"shop16", latitude:25.6141772, longitude:85.0719904, radius:50, district:"Patna"},
-  {name:"shop17", latitude:25.6146772, longitude:85.0723904, radius:50, district:"Patna"},
-  {name:"shop18", latitude:25.6151772, longitude:85.0727904, radius:50, district:"Patna"},
-  {name:"shop19", latitude:25.6156772, longitude:85.0731904, radius:50, district:"Patna"},
-  {name:"shop20", latitude:25.6161772, longitude:85.0735904, radius:50, district:"Patna"},
-  {name:"shop21", latitude:25.6166772, longitude:85.0739904, radius:50, district:"Patna"},
-  {name:"shop22", latitude:25.6171772, longitude:85.0743904, radius:50, district:"Patna"},
-  {name:"shop23", latitude:25.6176772, longitude:85.0747904, radius:50, district:"Patna"},
-  {name:"shop24", latitude:25.6181772, longitude:85.0751904, radius:50, district:"Patna"},
-  {name:"shop25", latitude:25.6186772, longitude:85.0755904, radius:50, district:"Patna"},
-  {name:"shop26", latitude:25.6191772, longitude:85.0759904, radius:50, district:"Patna"},
-  {name:"shop27", latitude:25.6196772, longitude:85.0763904, radius:50, district:"Patna"},
-  {name:"shop28", latitude:25.6201772, longitude:85.0767904, radius:50, district:"Patna"},
-  {name:"shop29", latitude:25.6206772, longitude:85.0771904, radius:50, district:"Patna"},
-  {name:"shop30", latitude:25.6211772, longitude:85.0775904, radius:50, district:"Patna"},
-];
+const outletDistricts=["Patna","Bhagalpur","Muzaffarpur","Gaya","Darbhanga","Purnia"];
+const seedOutletShops=Array.from({length:50},(_,index)=>{
+  const shopNumber=index+1;
+  const row=Math.floor(index/10);
+  return {
+    name:`shop${shopNumber}`,
+    shopCode:`MM${String(shopNumber).padStart(3,"0")}`,
+    latitude:25.6066772 + row*0.0046 + (index%10)*0.00042,
+    longitude:85.0659904 + row*0.0039 + (index%10)*0.00036,
+    radius:50,
+    district:outletDistricts[index % outletDistricts.length],
+  };
+});
 
 let outletShops=[...seedOutletShops];
 
 function normalizeOutletShop(value, fallbackName=""){
   const name=String(value?.name || value?.shopName || fallbackName || "").trim();
+  const shopCode=String(value?.shopCode || value?.code || value?.qrCode || fallbackName || name || "").trim();
   const latitude=Number(value?.latitude ?? value?.lat ?? value?.shopLatitude);
   const longitude=Number(value?.longitude ?? value?.lng ?? value?.shopLongitude);
   const radius=Number(value?.radius ?? value?.radiusMeters ?? value?.shopRadiusMeters ?? 50);
   const district=String(value?.district || value?.shopDistrict || name || "").trim();
   if(!name || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-  return {name, latitude, longitude, radius:Number.isFinite(radius)&&radius>0?radius:50, district};
+  return {name, shopCode, latitude, longitude, radius:Number.isFinite(radius)&&radius>0?radius:50, district};
 }
 
 function applyOutletData(snapshotValue){
@@ -446,6 +469,146 @@ let geoLocationState={
 };
 let geoLocationPrompted=false;
 
+const qrAdminEnabled=/[?&]admin=1(?:&|$)/.test(location.search)||localStorage.getItem("momsmagic_qr_admin")==="1";
+const qrAppUrlKey="momsmagic_qr_app_url";
+
+function normalizeShopCode(value){
+  return String(value || "").trim().toUpperCase();
+}
+
+function findOutletByCode(code){
+  const wanted=normalizeShopCode(code);
+  if(!wanted) return null;
+  return outletShops.find(shop=>normalizeShopCode(shop.shopCode)===wanted || normalizeShopCode(shop.name)===wanted) || null;
+}
+
+function applyShopSelection(shop, sourceLabel="QR code"){
+  if(!shop) return;
+  geoLocationState={
+    status:"matched",
+    latitude:shop.latitude ?? null,
+    longitude:shop.longitude ?? null,
+    accuracy:null,
+    matchedShop:shop,
+  };
+  updateDetectedShopUi(`${shop.name} selected from ${sourceLabel}`, shop);
+}
+
+function getCanonicalAppUrl(){
+  const storedUrl=localStorage.getItem(qrAppUrlKey);
+  if(storedUrl) return storedUrl.trim();
+  if(location.protocol!=="file:"){
+    const url=new URL(location.href);
+    url.search="";
+    url.hash="";
+    return url.toString();
+  }
+  return "";
+}
+
+function resolveShopCodeFromInput(){
+  const shopInput=document.getElementById("detectedShopName");
+  if(!shopInput) return;
+  const shop=findOutletByCode(shopInput.value);
+  if(shop){
+    shopInput.value=shop.shopCode || shop.name;
+    applyShopSelection(shop, "QR code");
+    try{
+      const url=new URL(location.href);
+      url.searchParams.set("shop", shop.shopCode || shop.name);
+      url.searchParams.set("shopName", shop.name || "");
+      if(window.history && window.history.replaceState) window.history.replaceState({}, "", url.toString());
+    }catch(e){
+      console.warn("⚠️ qr url update", e.message);
+    }
+  }else{
+    geoLocationState={status:"qr-invalid",latitude:null,longitude:null,accuracy:null,matchedShop:null};
+    updateDetectedShopUi("Invalid QR code. Please scan or type a valid shop code.", null);
+  }
+}
+
+function applyShopCodeFromUrl(){
+  try{
+    const params=new URLSearchParams(location.search);
+    const code=params.get("shop") || params.get("code");
+    if(!code) return;
+    const shop=findOutletByCode(code);
+    if(shop){
+      applyShopSelection(shop, "QR link");
+      const shopInput=document.getElementById("detectedShopName");
+      if(shopInput) shopInput.value=shop.shopCode || shop.name;
+      if(location.search.includes("shop=") && !location.search.includes("shopName=")){
+        const url=new URL(location.href);
+        url.searchParams.set("shopName", shop.name || "");
+        if(window.history && window.history.replaceState) window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }catch(e){
+    console.warn("⚠️ qr link", e.message);
+  }
+}
+
+function getDefaultQrBaseUrl(){
+  return getCanonicalAppUrl();
+}
+
+function buildShopQrUrl(shopCode, baseUrl){
+  const cleanedBase=String(baseUrl || "").trim();
+  if(!cleanedBase) return "";
+  const url=new URL(cleanedBase);
+  url.searchParams.set("shop", shopCode);
+  url.searchParams.delete("admin");
+  return url.toString();
+}
+
+function renderQrAdminPanel(){
+  const panel=document.getElementById("qrAdminPanel");
+  const grid=document.getElementById("qrGrid");
+  const baseInput=document.getElementById("qrBaseUrl");
+  if(!panel || !grid || !baseInput) return;
+  if(qrAdminEnabled) panel.classList.add("show"); else { panel.classList.remove("show"); return; }
+  if(!baseInput.value.trim()) baseInput.value=getDefaultQrBaseUrl() || localStorage.getItem(qrAppUrlKey) || "";
+  const baseUrl=baseInput.value.trim();
+  if(baseUrl) localStorage.setItem(qrAppUrlKey, baseUrl);
+  grid.innerHTML="";
+  if(!baseUrl){
+    grid.innerHTML='<div class="lb-empty" style="grid-column:1/-1;">Paste the public app URL above, then refresh to generate the QR sheet.</div>';
+    return;
+  }
+  outletShops.slice(0,50).forEach(shop=>{
+    const card=document.createElement("div");
+    card.className="qr-card";
+    const qrBox=document.createElement("div");
+    qrBox.className="qr-code";
+    card.appendChild(qrBox);
+    const qrUrl=buildShopQrUrl(shop.shopCode || shop.name, baseUrl);
+    const label=document.createElement("div");
+    label.className="qr-card-name";
+    label.textContent=shop.name;
+    card.appendChild(label);
+    const meta=document.createElement("div");
+    meta.className="qr-card-code";
+    meta.textContent=shop.shopCode || shop.name;
+    card.appendChild(meta);
+    const district=document.createElement("div");
+    district.className="qr-card-district";
+    district.textContent=shop.district || "Bihar";
+    card.appendChild(district);
+    const link=document.createElement("div");
+    link.className="qr-link";
+    link.textContent=qrUrl;
+    card.appendChild(link);
+    grid.appendChild(card);
+    if(window.QRCode){
+      new QRCode(qrBox,{text:qrUrl,width:112,height:112,correctLevel:QRCode.CorrectLevel.M});
+    }else{
+      qrBox.textContent=qrUrl;
+      qrBox.style.fontSize="10px";
+      qrBox.style.wordBreak="break-all";
+    }
+  });
+}
+
 function distanceMeters(lat1, lon1, lat2, lon2){
   const earthRadius=6371000;
   const toRadians=value=>value*Math.PI/180;
@@ -460,28 +623,19 @@ function updateDetectedShopUi(message, shop){
   const shopInput=document.getElementById("detectedShopName");
   const statusEl=document.getElementById("geoStatus");
   if(shopInput){
-    const wasReadOnly=shopInput.readOnly;
     if(shop){
       shopInput.readOnly=true;
       shopInput.type="text";
       shopInput.inputMode="text";
       shopInput.autocomplete="off";
-      shopInput.value=shop.name;
-      shopInput.placeholder="Detected shop";
-    }else if(["outside-radius","denied","insecure-context","unsupported"].includes(geoLocationState.status)){
-      shopInput.readOnly=false;
-      shopInput.type="tel";
-      shopInput.inputMode="tel";
-      shopInput.autocomplete="tel";
-      if(wasReadOnly) shopInput.value="";
-      shopInput.placeholder="Enter personal number";
+      shopInput.value=shop.shopCode || shop.name;
+      shopInput.placeholder="Shop selected";
     }else{
-      shopInput.readOnly=true;
+      shopInput.readOnly=false;
       shopInput.type="text";
       shopInput.inputMode="text";
       shopInput.autocomplete="off";
-      if(wasReadOnly) shopInput.value="";
-      shopInput.placeholder=message || "Detecting shop location...";
+      shopInput.placeholder=message || "Enter shop QR code";
     }
   }
   if(statusEl) statusEl.textContent=message || "";
@@ -517,45 +671,8 @@ function matchOutletShop(latitude, longitude, accuracy){
 }
 
 function captureOutletLocation(fromUserGesture=false){
-  if(geoLocationState.status==="matched" && !fromUserGesture){
-    return;
-  }
-  if(geoLocationPrompted && !fromUserGesture && geoLocationState.status!=="denied"){
-    return;
-  }
-  if(fromUserGesture){
-    geoLocationPrompted=true;
-  }else if(!geoLocationPrompted){
-    geoLocationPrompted=true;
-  }
-  if(!window.isSecureContext){
-    geoLocationState={status:"insecure-context",latitude:null,longitude:null,accuracy:null,matchedShop:null};
-    updateDetectedShopUi("Location needs HTTPS or localhost. Open this page from the installed app or a secure server, then tap Detect shop location.", null);
-    return;
-  }
-  if(!navigator.geolocation){
-    updateDetectedShopUi("Location is not supported in this browser.", null);
-    return;
-  }
-  updateDetectedShopUi(fromUserGesture ? "Requesting location permission..." : "Detecting shop location...", null);
-  navigator.geolocation.getCurrentPosition(
-    position=>{
-      const {latitude, longitude, accuracy}=position.coords;
-      matchOutletShop(latitude, longitude, accuracy);
-    },
-    error=>{
-      geoLocationState={status:"denied",latitude:null,longitude:null,accuracy:null,matchedShop:null};
-      const message=error && error.code===1
-        ? "Location permission was denied. Tap Detect shop location and allow access."
-        : error && error.code===2
-          ? "Position unavailable. Move to a clearer signal area and try again."
-          : error && error.code===3
-            ? "Location request timed out. Tap Detect shop location again."
-            : `Unable to capture location right now. ${error?.message || ""}`.trim();
-      updateDetectedShopUi(message, null);
-    },
-    {enableHighAccuracy:true, timeout:10000, maximumAge:0}
-  );
+  if(fromUserGesture) geoLocationPrompted=true;
+  updateDetectedShopUi("QR codes replace GPS for nearby shops. Enter or scan a shop code.", null);
 }
 
 async function exportHiddenAnalytics(){
@@ -730,6 +847,7 @@ async function saveScore(){
   const name=document.getElementById("playerName").value.trim()||"Anonymous";
   const district=document.getElementById("playerDistrict").value||"Bihar";
   const detectedShop=document.getElementById("detectedShopName").value.trim();
+  const resolvedShop=geoLocationState.matchedShop || findOutletByCode(detectedShop);
   const purchasedQuantity=Number(document.getElementById("purchasedQuantity").value||0);
   const btn=document.getElementById("saveBtn");
   const status=document.getElementById("saveStatus");
@@ -743,11 +861,12 @@ async function saveScore(){
       lastHad: quizAns.q1||"",
       favFlavor: quizAns.q2||"",
       purchaseQuantity:purchasedQuantity,
-      shopName: geoLocationState.matchedShop ? (geoLocationState.matchedShop.name || "") : "",
-      personalNumber: !geoLocationState.matchedShop ? detectedShop : "",
-      shopLatitude: geoLocationState.matchedShop?.latitude ?? null,
-      shopLongitude: geoLocationState.matchedShop?.longitude ?? null,
-      shopRadiusMeters: geoLocationState.matchedShop?.radius ?? null,
+      shopName: resolvedShop ? (resolvedShop.name || "") : "",
+      shopCode: resolvedShop ? (resolvedShop.shopCode || "") : "",
+      personalNumber: resolvedShop ? "" : detectedShop,
+      shopLatitude: resolvedShop?.latitude ?? null,
+      shopLongitude: resolvedShop?.longitude ?? null,
+      shopRadiusMeters: resolvedShop?.radius ?? null,
       userLatitude: geoLocationState.latitude,
       userLongitude: geoLocationState.longitude,
       locationAccuracyMeters: geoLocationState.accuracy,
@@ -1001,7 +1120,10 @@ canvas.addEventListener("touchend",()=>touchStartX=null);
 
 // Init
 listenForOutletData();
-window.addEventListener("load",()=>captureOutletLocation(false));
+window.addEventListener("load",()=>{
+  applyShopCodeFromUrl();
+  renderQrAdminPanel();
+});
 drawBackground(); drawBasket(); initLeaderboard();
 </script>
 </body>
