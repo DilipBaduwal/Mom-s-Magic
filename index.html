@@ -1387,6 +1387,7 @@ let savedScore=0;
 async function saveScore(){
   const name=document.getElementById("playerName").value.trim()||"Anonymous";
   const phoneNumber=document.getElementById("phoneNumber").value.trim();
+  const finalScore=Number(document.getElementById("finalScore").textContent || savedScore || 0) || 0;
   const resolvedShop=shopScanDetected ? geoLocationState.matchedShop : null;
   const btn=document.getElementById("saveBtn");
   const status=document.getElementById("saveStatus");
@@ -1395,7 +1396,7 @@ async function saveScore(){
     status.textContent="Please answer both questions before saving.";
     return;
   }
-  if(Number(savedScore) > 2000 && !phoneNumber){
+  if(finalScore > 2000 && !phoneNumber){
     status.textContent="Please enter your phone number for scores above 2000.";
     return;
   }
@@ -1420,7 +1421,7 @@ async function saveScore(){
     const ipInfo=await getClientIpInfo().catch(()=>({ipAddress:"",ipProvider:""}));
     const websiteEntryTimestamp=getWebsiteEntryTimestamp();
     const entry={
-      name, score:Number(savedScore),
+      name, score:finalScore,
       date:new Date().toLocaleDateString("en-IN"),
       timestamp:Date.now(),
       scoreTimestamp: Date.now(),
@@ -1444,7 +1445,7 @@ async function saveScore(){
     };
     await db.ref("scores").push(entry);
     await trackHiddenAnalytics("scoresEntered",analyticsSessionKeys.scoresEntered,true).catch(()=>{});
-    status.textContent="✅ Saved to Firebase! Score: "+savedScore;
+    status.textContent="✅ Saved to Firebase! Score: "+finalScore;
     quizAns={q1:"",q2:""};
     setTimeout(()=>startGame(),900);
   }catch(e){
